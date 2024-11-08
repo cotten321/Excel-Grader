@@ -1,8 +1,9 @@
+#import openpyxl
+#import csv
 import os
 import pandas as pd
-import openpyxl
 from tkinter import Tk, filedialog, Label, Button, messagebox
-import csv
+
 
 # Import the grading algorithms from grading_algorithms.py
 from grading_algorithms import *
