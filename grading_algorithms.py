@@ -136,7 +136,7 @@ def grade_challenge_3_1(solution_path, student_path):
         # 2. Row Height and Column Width (2 points)
         # Check row height
         if student_ws.row_dimensions[1].height == 30:
-            score += 1.5
+            score += 2
         else:
             feedback.append("Row height for the header row (Row 1) is incorrect; Expected 30 points.")
             
@@ -158,7 +158,7 @@ def grade_challenge_3_1(solution_path, student_path):
         # 3. Headers and Footers (2 points)
         # Check if there's text in the left part of the header
         if student_ws.oddHeader.left and hasattr(student_ws.oddHeader.left, 'text') and student_ws.oddHeader.left.text.strip():
-            score += 1.5
+            score += 2
         else:
             feedback.append("No text found in the left side of the header.")
 
