@@ -76,31 +76,14 @@ def grade_challenge_1_1(solution_path, student_path):
 def grade_challenge_3_1(solution_path, student_path):
     try:
         # Load workbooks and select active sheets
-        #solution_wb = openpyxl.load_workbook(solution_path)
+        ##solution_wb = openpyxl.load_workbook(solution_path)
         student_wb = openpyxl.load_workbook(student_path)
         student_ws = student_wb.active
 
         # Initialize scoring variables
         score = 0
-<<<<<<< HEAD
-        total_points = 20  # Adjust based on grading
-=======
         total_points = 15  # Adjust based on grading
->>>>>>> 9ba14c9055b82de362dfdb5c45aef3aed8a00f0e
         feedback = []  
-        
-        #DEBUGGING
-        print("Debug - Page Setup Scaling Settings:")
-        print("Orientation:", student_ws.page_setup.orientation)
-        print("Fit to Width:", student_ws.page_setup.fitToWidth)
-        print("Margins - Left:", student_ws.page_margins.left, "Right:", student_ws.page_margins.right)
-        print("Margins - Top:", student_ws.page_margins.top, "Bottom:", student_ws.page_margins.bottom)
-        print("Row Height for Row 1:", student_ws.row_dimensions[1].height)
-        print("Column Width for Column A:", student_ws.column_dimensions["A"].width)
-        print("Column Width for B:", student_ws.column_dimensions["B"].width)
-        print("Column Width for C:", student_ws.column_dimensions["C"].width)
-        print("Column Width for D:", student_ws.column_dimensions["D"].width)
-        print("Column Width for E:", student_ws.column_dimensions["E"].width)
         
         # 1. Page Setup (4 points)
         # Check page orientation
@@ -110,12 +93,10 @@ def grade_challenge_3_1(solution_path, student_path):
             feedback.append("Incorrect page orientation")
             
             
-<<<<<<< HEAD
         #DEBUGGING
         print("Debug - Page Setup Scaling Settings:")
         print("Orientation:", student_ws.page_setup.orientation)
         print("Fit to Width:", student_ws.page_setup.fitToWidth)
-        print("Fit to Height:", student_ws.page_setup.fitToHeight)
         print("Margins - Left:", student_ws.page_margins.left, "Right:", student_ws.page_margins.right)
         print("Margins - Top:", student_ws.page_margins.top, "Bottom:", student_ws.page_margins.bottom)
         print("Row Height for Row 1:", student_ws.row_dimensions[1].height)
@@ -126,9 +107,12 @@ def grade_challenge_3_1(solution_path, student_path):
         fit_to_width = student_ws.page_setup.fitToWidth or 1
         fit_to_height = student_ws.page_setup.fitToHeight or 1
         if fit_to_width == 1 and fit_to_height == 1:
-            score += 2
+            score += 1
         else:
-            feedback.append("Scaling not set to fit data to 1 page wide.")
+            feedback.append("Incorrect page orientation")
+            
+            
+        # Scale to Fit to 1 page is ungradeable at this time
 
         # Check for narrow margins
         if (round(float(student_ws.page_margins.left), 2) == 0.25 and 
@@ -136,7 +120,7 @@ def grade_challenge_3_1(solution_path, student_path):
             round(float(student_ws.page_margins.top), 2) == 0.75 and 
             round(float(student_ws.page_margins.bottom), 2) == 0.75):
             score += 2
-=======
+
         # Scale to Fit to 1 page is ungradeable at this time
 
         # Check for narrow margins
@@ -145,22 +129,12 @@ def grade_challenge_3_1(solution_path, student_path):
             student_ws.page_margins.top == 0.75 and 
             student_ws.page_margins.bottom == 0.75):
             score += 1.5
->>>>>>> 9ba14c9055b82de362dfdb5c45aef3aed8a00f0e
+
         else:
             feedback.append("Margins are not set to Narrow.")
 
         # 2. Row Height and Column Width (2 points)
         # Check row height
-<<<<<<< HEAD
-        if round(float(student_ws.row_dimensions[1].height), 2) == 30:
-            score += 1
-        else:
-            feedback.append("Row height for the header row (Row 1) is incorrect; Expected 30 points.")
-            
-        # Check column widths for column A and B
-        if round(float(student_ws.column_dimensions["A"].width), 2) == 20:
-            score += 1
-=======
         if student_ws.row_dimensions[1].height == 30:
             score += 1.5
         else:
@@ -169,7 +143,6 @@ def grade_challenge_3_1(solution_path, student_path):
         # Check column widths for column A (Allows for a small tolerance to mitigate Excels float points)
         if 19 <= student_ws.column_dimensions["A"].width <=21:
             score += 1.5
->>>>>>> 9ba14c9055b82de362dfdb5c45aef3aed8a00f0e
         else:
             feedback.append("Incorrect column width for column A; Expected 20.")
         
@@ -188,15 +161,6 @@ def grade_challenge_3_1(solution_path, student_path):
             score += 1.5
         else:
             feedback.append("No text found in the left side of the header.")
-<<<<<<< HEAD
-        # Check for Date in center part of the header
-        if "{&D}" in student_ws.oddHeader.center.text:  # Checking if date is used in center
-            score += 1
-        else:
-            feedback.append("Header does not contain date in center.")
-        # Check if file name is in right side of header
-        if "{&F}" in student_ws.oddHeader.right.text:  # Checking if filename is used in right
-=======
 
         # Check for Date in the center part of the header
         if student_ws.oddHeader.center and hasattr(student_ws.oddHeader.center, 'text') and "&D" in student_ws.oddHeader.center.text:
@@ -206,25 +170,20 @@ def grade_challenge_3_1(solution_path, student_path):
 
         # Check if the file name is in the right side of the header
         if student_ws.oddHeader.right and hasattr(student_ws.oddHeader.right, 'text') and "&F" in student_ws.oddHeader.right.text:
->>>>>>> 9ba14c9055b82de362dfdb5c45aef3aed8a00f0e
             score += 1
         else:
             feedback.append("Header does not contain file name on the right.")
 
         # Footer checks for page numbering
-<<<<<<< HEAD
-        if "&P" in student_ws.oddFooter.left.text:
-            score += 0.5
-        else:
-            feedback.append("Footer does not contain page number on the left.")
-        if "&N" in student_ws.oddFooter.right.text:
-            score += 0.5
-=======
         if student_ws.oddFooter.left and hasattr(student_ws.oddFooter.left, 'text') and "&P" in student_ws.oddFooter.left.text:
             score += 1
->>>>>>> 9ba14c9055b82de362dfdb5c45aef3aed8a00f0e
         else:
             feedback.append("Footer does not contain page number on the left.")
+
+        if student_ws.oddFooter.right and hasattr(student_ws.oddFooter.right, 'text') and "&N" in student_ws.oddFooter.right.text:
+            score += 1
+        else:
+            feedback.append("Footer does not contain total number of pages on the right.")
 
         if student_ws.oddFooter.right and hasattr(student_ws.oddFooter.right, 'text') and "&N" in student_ws.oddFooter.right.text:
             score += 1
