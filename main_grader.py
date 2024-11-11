@@ -14,9 +14,8 @@ from grading_algorithms import *
 def get_grading_function(challenge_number):
     grading_functions = {
         "1.1": grade_challenge_1_1,
-        # "1.2": grade_challenge_1_2,
+        "2": grade_challenge_2,
         "3.1": grade_challenge_3_1,
-        # Add more mappings like "1.2": grade_challenge_1_2, etc.
     }
     return grading_functions.get(challenge_number)
 
