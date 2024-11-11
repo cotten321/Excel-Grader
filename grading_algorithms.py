@@ -82,7 +82,7 @@ def grade_challenge_3_1(solution_path, student_path):
 
         # Initialize scoring variables
         score = 0
-        total_points = 15  # Adjust based on grading
+        total_points = 20  # Adjust based on grading
         feedback = []  
         
         # 1. Page Setup (4 points)
@@ -141,7 +141,7 @@ def grade_challenge_3_1(solution_path, student_path):
             feedback.append("Row height for the header row (Row 1) is incorrect; Expected 30 points.")
             
         # Check column widths for column A (Allows for a small tolerance to mitigate Excels float points)
-        if 19 <= student_ws.column_dimensions["A"].width <=23:
+        if 19 <= student_ws.column_dimensions["A"].width <=21:
             score += 1.5
         else:
             feedback.append("Incorrect column width for column A; Expected 20.")
