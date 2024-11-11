@@ -1,6 +1,7 @@
 import openpyxl
 import traceback
 from openpyxl.utils import get_column_letter
+
 from openpyxl.worksheet.header_footer import _HeaderFooterPart
 
 def grade_challenge_1_1(student_path):

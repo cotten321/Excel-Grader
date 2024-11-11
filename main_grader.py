@@ -1,11 +1,9 @@
-#import openpyxl
-#import csv
 import os
 import pandas as pd
 from tkinter import Tk, filedialog, Label, Button, messagebox
+from tkinter import ttk
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import NamedStyle
-
 
 # Import the grading algorithms from grading_algorithms.py
 from grading_algorithms import *
@@ -13,23 +11,20 @@ from grading_algorithms import *
 # Function to determine the correct grading function based on challenge number
 def get_grading_function(challenge_number):
     grading_functions = {
-        "1.1": grade_challenge_1_1,
-        "2": grade_challenge_2,
-        "3.1": grade_challenge_3_1,
+        "1.1: Import data into workbooks": grade_challenge_1_1,
+        "2: Navigate within workbooks": grade_challenge_2,
+        "3.1: Format worksheets and workbooks": grade_challenge_3_1,
     }
-    return grading_functions.get(challenge_number)
+    return grading_functions.get(challenge_number), grading_functions
 
 # Function to process student submissions
-def process_submissions(folder_path, solution_path, output_path):
-    grades = []
-
-    # Extract challenge number from the solution file name
-    challenge_number = os.path.basename(solution_path).split('_')[0]
-    grading_function = get_grading_function(challenge_number)
-
+def process_submissions(folder_path, challenge_number, output_path):
+    grading_function, _ = get_grading_function(challenge_number)
     if not grading_function:
         messagebox.showerror("Grading Error", f"No grading function available for challenge {challenge_number}.")
         return
+
+    grades = []
 
     # Iterate through student folders
     for student_folder in os.listdir(folder_path):
@@ -43,7 +38,7 @@ def process_submissions(folder_path, solution_path, output_path):
                     print(f"Grading {student_file_path}")
 
                     # Use the selected grading function
-                    score, total_points, feedback = grading_function(solution_path, student_file_path)
+                    score, total_points, feedback = grading_function(student_file_path)
                     percentage = round((score / total_points) * 100, 2) if total_points > 0 else 0
 
                     # Add the result to the grades list
@@ -52,7 +47,7 @@ def process_submissions(folder_path, solution_path, output_path):
                         "Score": score,
                         "Total Points": total_points,
                         "Percentage": percentage,
-                        "": "", #Empty column for easier viewing
+                        "": "",  # Empty column for easier viewing
                         "Feedback": "; ".join(feedback)  # Join feedback items as a single string.
                     })
                     break
@@ -89,15 +84,15 @@ def process_submissions(folder_path, solution_path, output_path):
 def setup_gui():
     root = Tk()
     root.title("Excel Grader")
-    root.geometry("300x450")
+    root.geometry("300x400")
+
+    # Get grading function labels for the combobox
+    _, grading_functions = get_grading_function(None)
+    challenge_labels = list(grading_functions.keys())
 
     def select_folder():
         folder = filedialog.askdirectory()
         folder_label.config(text=folder)
-
-    def select_solution():
-        solution = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
-        solution_label.config(text=solution)
 
     def select_output():
         output = filedialog.askdirectory()
@@ -105,14 +100,14 @@ def setup_gui():
 
     def start_grading():
         folder_path = folder_label.cget("text")
-        solution_path = solution_label.cget("text")
+        challenge_number = challenge_combobox.get()
         output_path = output_label.cget("text")
 
-        if not folder_path or not solution_path or not output_path:
-            messagebox.showwarning("Input Error", "Please select all required paths.")
+        if not folder_path or not challenge_number or not output_path:
+            messagebox.showwarning("Input Error", "Please select all required inputs.")
             return
 
-        process_submissions(folder_path, solution_path, output_path)
+        process_submissions(folder_path, challenge_number, output_path)
 
     # Create GUI components
     Label(root, text="Select Student Submissions Folder:").pack(pady=5)
@@ -120,10 +115,9 @@ def setup_gui():
     folder_label.pack(pady=5)
     Button(root, text="Browse", command=select_folder).pack(pady=5)
 
-    Label(root, text="Select Solution File:").pack(pady=5)
-    solution_label = Label(root, text="", wraplength=350)
-    solution_label.pack(pady=5)
-    Button(root, text="Browse", command=select_solution).pack(pady=5)
+    Label(root, text="Select Challenge to Grade:").pack(pady=5)
+    challenge_combobox = ttk.Combobox(root, values=challenge_labels)
+    challenge_combobox.pack(pady=5)
 
     Label(root, text="Select Output Folder:").pack(pady=5)
     output_label = Label(root, text="", wraplength=350)
