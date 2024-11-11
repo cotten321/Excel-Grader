@@ -1,8 +1,11 @@
+#import openpyxl
+#import csv
 import os
 import pandas as pd
-import openpyxl
 from tkinter import Tk, filedialog, Label, Button, messagebox
-import csv
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import NamedStyle
+
 
 # Import the grading algorithms from grading_algorithms.py
 from grading_algorithms import *
@@ -11,7 +14,7 @@ from grading_algorithms import *
 def get_grading_function(challenge_number):
     grading_functions = {
         "1.1": grade_challenge_1_1,
-        #"1.2": grade_challenge_1_2,
+        # "1.2": grade_challenge_1_2,
         "3.1": grade_challenge_3_1,
         # Add more mappings like "1.2": grade_challenge_1_2, etc.
     }
@@ -42,7 +45,7 @@ def process_submissions(folder_path, solution_path, output_path):
 
                     # Use the selected grading function
                     score, total_points, feedback = grading_function(solution_path, student_file_path)
-                    percentage = (score / total_points) * 100 if total_points > 0 else 0
+                    percentage = round((score / total_points) * 100, 2) if total_points > 0 else 0
 
                     # Add the result to the grades list
                     grades.append({
@@ -50,14 +53,37 @@ def process_submissions(folder_path, solution_path, output_path):
                         "Score": score,
                         "Total Points": total_points,
                         "Percentage": percentage,
+                        "": "", #Empty column for easier viewing
                         "Feedback": "; ".join(feedback)  # Join feedback items as a single string.
                     })
                     break
 
-    # Convert grades list to a DataFrame and export to CSV
+    # Convert grades list to a DataFrame and export to Excel
     df = pd.DataFrame(grades)
-    output_file = os.path.join(output_path, "grades_report.csv")
-    df.to_csv(output_file, index=False)
+    
+    output_file = os.path.join(output_path, "grades_report.xlsx")
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Grading Report"
+    
+    # Append the header
+    ws.append(["Student", "Score", "Total Points", "Percentage", "", "Feedback"])
+    
+    # Add student data and apply cell styles
+    for index, row in df.iterrows():
+        ws.append(row.tolist())
+        
+        # Apply styles based on the score
+        cell = ws[f"A{index + 2}"]
+        if row["Percentage"] > 85:
+            cell.style = "Good"
+        elif 65 <= row["Percentage"] <= 85:
+            cell.style = "Neutral"
+        else:
+            cell.style = "Bad"
+            
+    # Save the report
+    wb.save(output_file)        
     messagebox.showinfo("Success", f"Grading complete! Report saved to: {output_file}")
 
 # Function to set up the GUI
