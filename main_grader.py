@@ -6,7 +6,6 @@ from tkinter import Tk, filedialog, Label, Button, messagebox
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import NamedStyle
 
-#CHRISTOHERS MAIN
 
 # Import the grading algorithms from grading_algorithms.py
 from grading_algorithms import *

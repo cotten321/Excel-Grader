@@ -3,10 +3,9 @@ import traceback
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.header_footer import _HeaderFooterPart
 
-def grade_challenge_1_1(solution_path, student_path):
+def grade_challenge_1_1(student_path):
     try:
         # Load workbooks and select active sheets
-        solution_wb = openpyxl.load_workbook(solution_path)
         student_wb = openpyxl.load_workbook(student_path)
         student_ws = student_wb.active
 
@@ -72,11 +71,72 @@ def grade_challenge_1_1(solution_path, student_path):
         print(f"Error comparing workbooks: {e}")
         return 0, total_points  # In case of an error, give 0 score but consider total points
     
+def grade_challenge_2(student_path):
+    try:
+        # Load the student workbook and select the active sheet
+        student_wb = openpyxl.load_workbook(student_path)
+        student_ws = student_wb.active
 
-def grade_challenge_3_1(solution_path, student_path):
+        # Initialize scoring variables
+        score = 0
+        total_points = 15  # Adjust based on grading
+        feedback = []
+
+        # 1. Searching for data (4 points)
+        # Check if the cell with the employee making $75,000 is highlighted in yellow
+        target_cell = "B144"  # The cell containing the employee's name making $75,000
+        if student_ws[target_cell].fill.start_color.rgb == "FFFFFF00":  # Yellow color in Excel
+            score += 2
+        else:
+            feedback.append("Cell B144 (name of employee with $75,000 salary) is not highlighted in yellow.")
+
+        # 2. Navigating to named cells/ranges (5 points)
+        # Check if "EmployeeInfo" named range exists
+        if "EmployeeInfo" in student_wb.defined_names:
+            score += 2
+        else:
+            feedback.append("Named range 'EmployeeInfo' not found.")
+
+        # Check if the named range "EmployeeInfo" has the correct range A1:B201
+        if "EmployeeInfo" in student_wb.defined_names:
+            defined_range = student_wb.defined_names["EmployeeInfo"].attr_text
+            if defined_range.endswith("!$A$1:$B$201"):
+                score += 2
+            else:
+                feedback.append("Named range 'EmployeeInfo' does not refer to cells A1:B201.")
+
+        # Check if the font for the range is Times New Roman
+        cells_in_range = student_ws["A1:B201"]
+        font_correct = all(cell.font.name == "Times New Roman" for row in cells_in_range for cell in row)
+        if font_correct:
+            score += 2
+        else:
+            feedback.append("Font for 'EmployeeInfo' named range is not set to Times New Roman.")
+
+        # 3. Hyperlinks (6 points)
+        # Check if the hyperlink in cell B204 has been removed
+        if not student_ws["B204"].hyperlink:
+            score += 3
+        else:
+            feedback.append("Hyperlink in cell B204 has not been removed.")
+
+        # Check if the hyperlink was added to cell F4 with the correct URL and display text
+        cell_f4 = student_ws["F4"]
+        if cell_f4.hyperlink and cell_f4.hyperlink.target == "https://www.examplecompany.com" and cell_f4.value == "Example Company":
+            score += 3
+        else:
+            feedback.append("Cell F4 does not have the correct hyperlink and display text.")
+
+        return score, total_points, feedback
+
+    except Exception as e:
+        print(f"Error comparing workbooks for Assignment 2: {e}")
+        traceback.print_exc()
+        return 0, total_points, ["An error occurred during grading."]
+
+def grade_challenge_3_1(student_path):
     try:
         # Load workbooks and select active sheets
-        ##solution_wb = openpyxl.load_workbook(solution_path)
         student_wb = openpyxl.load_workbook(student_path)
         student_ws = student_wb.active
 
