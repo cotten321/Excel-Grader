@@ -6,7 +6,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import NamedStyle
 
 # Import the grading algorithms from grading_algorithms.py
-from grading_algorithms import *
+from grading_algorithms import *  # Assuming these functions exist
 
 # Function to determine the correct grading function based on challenge number
 def get_grading_function(challenge_number):
@@ -90,18 +90,32 @@ def setup_gui():
     _, grading_functions = get_grading_function(None)
     challenge_labels = list(grading_functions.keys())
 
+    # Variables to store the full paths
+    folder_full_path = None
+    output_full_path = None
+
     def select_folder():
+        nonlocal folder_full_path
         folder = filedialog.askdirectory()
-        folder_label.config(text=folder)
+        if folder:  # Check if a folder was selected
+            folder_full_path = folder  # Store the full path
+            parent_folder = os.path.basename(os.path.normpath(folder))  # Get the parent folder name
+            folder_label.config(text=parent_folder)  # Display only the parent folder name
 
     def select_output():
+        nonlocal output_full_path
         output = filedialog.askdirectory()
-        output_label.config(text=output)
+        if output:  # Check if a folder was selected
+            output_full_path = output  # Store the full path
+            parent_folder = os.path.basename(os.path.normpath(output))  # Get the parent folder name
+            output_label.config(text=parent_folder)  # Display only the parent folder name
 
     def start_grading():
-        folder_path = folder_label.cget("text")
+        nonlocal folder_full_path, output_full_path
+
+        folder_path = folder_full_path
         challenge_number = challenge_combobox.get()
-        output_path = output_label.cget("text")
+        output_path = output_full_path
 
         if not folder_path or not challenge_number or not output_path:
             messagebox.showwarning("Input Error", "Please select all required inputs.")
