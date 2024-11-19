@@ -133,7 +133,7 @@ def setup_gui():
     challenge_combobox = ttk.Combobox(root, values=challenge_labels)
     challenge_combobox.pack(pady=5)
 
-    Label(root, text="Select Output Folder:").pack(pady=5)
+    Label(root, text="Select Output Location:").pack(pady=5)
     output_label = Label(root, text="", wraplength=350)
     output_label.pack(pady=5)
     Button(root, text="Browse", command=select_output).pack(pady=5)
