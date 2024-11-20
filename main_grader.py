@@ -4,16 +4,17 @@ from tkinter import Tk, filedialog, Label, Button, messagebox
 from tkinter import ttk
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import NamedStyle
+from openpyxl.utils.exceptions import InvalidFileException
 
 # Import the grading algorithms from grading_algorithms.py
-from grading_algorithms import *  # Assuming these functions exist
+from grading_algorithms import *
 
-# Function to determine the correct grading function based on challenge number
 def get_grading_function(challenge_number):
     grading_functions = {
+        "Project 1: Cafe Bloom": grade_project_1,
         "1.1: Import data into workbooks": grade_challenge_1_1,
         "2: Navigate within workbooks": grade_challenge_2,
-        "3.1: Format worksheets and workbooks": grade_challenge_3_1,
+        "3.1: Format worksheets and workbooks": grade_challenge_3_1
     }
     return grading_functions.get(challenge_number), grading_functions
 
@@ -21,7 +22,7 @@ def get_grading_function(challenge_number):
 def process_submissions(folder_path, challenge_number, output_path):
     grading_function, _ = get_grading_function(challenge_number)
     if not grading_function:
-        messagebox.showerror("Grading Error", f"No grading function available for challenge {challenge_number}.")
+        messagebox.showerror("Grading Error", f"No grading function available for challenge or project {challenge_number}.")
         return
 
     grades = []
@@ -37,20 +38,41 @@ def process_submissions(folder_path, challenge_number, output_path):
                     student_file_path = os.path.join(student_folder_path, file)
                     print(f"Grading {student_file_path}")
 
-                    # Use the selected grading function
-                    score, total_points, feedback = grading_function(student_file_path)
-                    percentage = round((score / total_points) * 100, 2) if total_points > 0 else 0
+                    # Try to load the workbook and process
+                    try:
+                        # Use the selected grading function
+                        score, total_points, feedback = grading_function(student_file_path)
+                        percentage = round((score / total_points) * 100, 2) if total_points > 0 else 0
 
-                    # Add the result to the grades list
-                    grades.append({
-                        "Student": student_folder,
-                        "Score": score,
-                        "Total Points": total_points,
-                        "Percentage": percentage,
-                        "": "",  # Empty column for easier viewing
-                        "Feedback": "; ".join(feedback)  # Join feedback items as a single string.
-                    })
-                    break
+                        # Add the result to the grades list
+                        grades.append({
+                            "Student": student_folder,
+                            "Score": score,
+                            "Total Points": total_points,
+                            "Percentage": percentage,
+                            "": "",  # Empty column for easier viewing
+                            "Feedback": "; ".join(feedback)  # Join feedback items as a single string.
+                        })
+
+                    except InvalidFileException as e:
+                        feedback = f"Error loading file: {e}"
+                        grades.append({
+                            "Student": student_folder,
+                            "Score": 0,
+                            "Total Points": 100,
+                            "Percentage": 0,
+                            "": "",
+                            "Feedback": feedback
+                        })
+                    except Exception as e:
+                        grades.append({
+                            "Student": student_folder,
+                            "Score": 0,
+                            "Total Points": 100,
+                            "Percentage": 0,
+                            "": "",
+                            "Feedback": f"Error: {str(e)}"
+                        })
 
     # Convert grades list to a DataFrame and export to Excel
     df = pd.DataFrame(grades)
