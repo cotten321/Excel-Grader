@@ -419,7 +419,11 @@ def grade_project_1(student_path):
                     formula_points = 0
                     if cell_obj.data_type == 'f':
                         # Convert ArrayFormula to string safely
-                        formula = str(cell_obj.value).strip()
+                        formula = str(cell_obj.value).strip().replace('_xlfn.', '')
+                        
+                        print(f"Debugging cell {cell}:")
+                        print(f"Received formula: {formula}")
+                        print(f"Expected formulaas: {calc['valid_formulas']}")
                         
                         for valid_formula in calc['valid_formulas']:
                             if formula == valid_formula:
@@ -448,8 +452,6 @@ def grade_project_1(student_path):
             except Exception as e:
                 print(f"Error processing cell {cell}: {e}")
                 feedback.append(f"Error processing cell {cell}: {e}")
-
-        # ... (rest of the method remains the same, with similar error handling added)
 
         return min(score, total_points), total_points, feedback
 
