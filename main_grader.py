@@ -3,7 +3,7 @@ import pandas as pd
 from tkinter import Tk, filedialog, Label, Button, messagebox
 from tkinter import ttk
 from openpyxl import Workbook, load_workbook
-from openpyxl.styles import NamedStyle
+from openpyxl.styles import NamedStyle, PatternFill
 from openpyxl.utils.exceptions import InvalidFileException
 
 # Import the grading algorithms from grading_algorithms.py
@@ -82,6 +82,29 @@ def process_submissions(folder_path, challenge_number, output_path):
     ws = wb.active
     ws.title = "Grading Report"
     
+    # Create named styles
+    outstanding_style = NamedStyle(name='Outstanding')
+    outstanding_style.fill = PatternFill(start_color='C099E8', end_color='C099E8', fill_type='solid')  # Purple
+    
+    good_style = NamedStyle(name='Good')
+    good_style.fill = PatternFill(start_color='41DF45', end_color='41DF45', fill_type='solid')  # Green
+    
+    neutral_style = NamedStyle(name='Neutral')
+    neutral_style.fill = PatternFill(start_color='FFFF99', end_color='FFFF99', fill_type='solid')  #  Yellow
+    
+    bad_style = NamedStyle(name='Bad')
+    bad_style.fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')  # Red
+    
+    # Add styles to workbook
+    if 'Outstanding' not in wb.named_styles:
+        wb.add_named_style(outstanding_style)
+    if 'Good' not in wb.named_styles:
+        wb.add_named_style(good_style)
+    if 'Neutral' not in wb.named_styles:
+        wb.add_named_style(neutral_style)
+    if 'Bad' not in wb.named_styles:
+        wb.add_named_style(bad_style)
+    
     # Append the header
     ws.append(["Student", "Score", "Total Points", "Percentage", "", "Feedback"])
     
@@ -91,7 +114,9 @@ def process_submissions(folder_path, challenge_number, output_path):
         
         # Apply styles based on the score
         cell = ws[f"A{index + 2}"]
-        if row["Percentage"] > 85:
+        if row["Percentage"] > 100:
+            cell.style = "Outstanding"
+        elif row["Percentage"] > 85:
             cell.style = "Good"
         elif 65 <= row["Percentage"] <= 85:
             cell.style = "Neutral"
@@ -119,18 +144,18 @@ def setup_gui():
     def select_folder():
         nonlocal folder_full_path
         folder = filedialog.askdirectory()
-        if folder:  # Check if a folder was selected
-            folder_full_path = folder  # Store the full path
-            parent_folder = os.path.basename(os.path.normpath(folder))  # Get the parent folder name
-            folder_label.config(text=parent_folder)  # Display only the parent folder name
+        if folder:
+            folder_full_path = folder
+            parent_folder = os.path.basename(os.path.normpath(folder))
+            folder_label.config(text=parent_folder)
 
     def select_output():
         nonlocal output_full_path
         output = filedialog.askdirectory()
-        if output:  # Check if a folder was selected
-            output_full_path = output  # Store the full path
-            parent_folder = os.path.basename(os.path.normpath(output))  # Get the parent folder name
-            output_label.config(text=parent_folder)  # Display only the parent folder name
+        if output:
+            output_full_path = output
+            parent_folder = os.path.basename(os.path.normpath(output))
+            output_label.config(text=parent_folder)
 
     def start_grading():
         nonlocal folder_full_path, output_full_path

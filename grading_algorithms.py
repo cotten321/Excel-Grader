@@ -341,23 +341,16 @@ def grade_project_1(student_path):
                 ],
                 'expected_value': 84,
                 'points': {
-                    'formula': 2,
+                    'formula': 1,
                     'value': 2
                 }
             },
             # Cell B4: Count of Reviews
             {
                 'cell': 'B4', 
-                'valid_formulas': [
-                    '=COUNTA(Reviews)',
-                    '=COUNTA(reviews)',
-                    '=COUNTA(simplified_coffee[review])'
-                ],
                 'expected_value': 1246,
                 'points': {
-                    'formula_standard': 2,
-                    'formula_alternative': 1,
-                    'value': 2
+                    'value': 4
                 }
             },
             # Cell B5: Sum of 100g USD
@@ -385,11 +378,9 @@ def grade_project_1(student_path):
             # Cell E2: Max Review Length
             {
                 'cell': 'E2', 
-                'valid_formulas': ['=MAX(LEN(Reviews))'],
                 'expected_value': 509,
                 'points': {
-                    'formula': 3,
-                    'value': 2
+                    'value': 5
                 }
             },
             # Cell E3: Average Rating
@@ -399,13 +390,125 @@ def grade_project_1(student_path):
                     '=AVERAGE(CoffeeData!G:G)', 
                     '=AVERAGE(simplified_coffee[Rating])'
                 ],
-                'expected_value': 93.3,
+                'expected_value': 93.31,
                 'points': {
-                    'formula': 2,
+                    'formula': 1,
                     'value': 2
                 }
-            }
+            },
+            # TABLE GRADING: H4 (Top of the table)
+            {
+                'cell': 'H4', 
+                'valid_formulas': ['=CoffeeData!A2'],
+                'expected_value': "Ethiopia Shakiso Mormora",
+                'points': {
+                    'formula': 1,
+                    'value': 1
+                }
+            },
+            # Cell H13
+            {
+                'cell': 'H13', 
+                'valid_formulas': ['=CoffeeData!A11'],
+                'expected_value': "Ethiopia Yirgacheffe Washed G1",
+                'points': {
+                    'formula': 1,
+                    'value': 1
+                }
+            },
+            # Cell I4 (Top of the table)
+            {
+                'cell': 'I4', 
+                'valid_formulas': ['=CoffeeData!F2*$I$1'],
+                'expected_value': 235.00,
+                'points': {
+                    'formula': 2,
+                    'value': 1
+                }
+            },
+            # Cell I13 (Bottom of the table)
+            {
+                'cell': 'I13', 
+                'valid_formulas': ['=CoffeeData!F11*$I$1'],
+                'expected_value': 343.50,
+                'points': {
+                    'formula': 2,
+                    'value': 1
+                }
+            },
+            # Cell J4 (Affordable Validation TOP)
+            {
+                'cell': 'J4', 
+                'valid_formulas': ['=IF(Table2[[#This Row],[USD per \'\'x\'\' Units]] <= 250, "Yes", "No")'],
+                'expected_value': "Yes",
+                'points': {
+                    'formula': 2,
+                    'value': 1
+                }
+            },
+            # Cell J9 (Affordable Validation MIDDLE)
+            {
+                'cell': 'J9', 
+                'valid_formulas': ['=IF(Table2[[#This Row],[USD per \'\'x\'\' Units]] <= 250, "Yes", "No")'],
+                'expected_value': "No",
+                'points': {
+                    'formula': 2,
+                    'value': 1
+                }
+            },
+            # Cell J13 (Affordable Validation BOTTOM)
+            {
+                'cell': 'J13', 
+                'valid_formulas': ['=IF(Table2[[#This Row],[USD per \'\'x\'\' Units]] <= 250, "Yes", "No")'],
+                'expected_value': "No",
+                'points': {
+                    'formula': 2,
+                    'value': 1
+                }
+            },
+            
+            
+            #--------BONUS QUESTIONS---------------------
+            # Cell C10: Ethiopian Light Roast
+            {
+                'cell': 'C10', 
+                'valid_formulas': [
+                    '=AVERAGEIFS(CoffeeData!G:G, CoffeeData!C:C, "Light", CoffeeData!E:E, "Ethiopia")',
+                    '=ROUND(AVERAGEIFS(CoffeeData!G:G, CoffeeData!C:C, "Light", CoffeeData!E:E, "Ethiopia"), 1)',
+                    '=ROUND(AVERAGE(IF((CoffeeData!C:C="Light")*(CoffeeData!E:E="Ethiopia"), CoffeeData!G:G)), 1)',
+                    '=ROUND(AVERAGE(FILTER(CoffeeData!G:G, (CoffeeData!C:C="Light")*(CoffeeData!E:E="Ethiopia"))), 1)',
+                    '=ROUND(SUMIFS(CoffeeData!G:G, CoffeeData!C:C, "Light", CoffeeData!E:E, "Ethiopia") / COUNTIFS(CoffeeData!C:C, "Light", CoffeeData!E:E, "Ethiopia"), 1)'
+                ],
+                'expected_value': 93.65,
+                'points': {
+                    'formula': 2.5,
+                    'value': 5
+                }
+            },
+            # Cell C11: Ethiopian Light Roast
+            {
+                'cell': 'C11', 
+                'expected_value': 92,
+                'points': {
+                    'value': 7.5
+                }
+            },
+            
         ]
+
+        # Helper function to compare values with type checking
+        def compare_values(actual_value, expected_value):
+            if isinstance(expected_value, (int, float)):
+                try:
+                    if actual_value is None:
+                        return False
+                    actual_float = float(actual_value)
+                    return round(actual_float, 2) == round(float(expected_value), 2)
+                except (TypeError, ValueError):
+                    return False
+            else:
+                # For text comparisons, convert both to strings and compare
+                return str(actual_value).strip() == str(expected_value).strip()
 
         # Perform detailed checks for each calculation
         for calc in calc_checks:
@@ -417,43 +520,49 @@ def grade_project_1(student_path):
                 # Formula check
                 if 'valid_formulas' in calc:
                     formula_points = 0
+                    formula_feedback = []
                     if cell_obj.data_type == 'f':
-                        # Convert ArrayFormula to string safely
                         formula = str(cell_obj.value).strip().replace('_xlfn.', '')
                         
                         print(f"Debugging cell {cell}:")
                         print(f"Received formula: {formula}")
-                        print(f"Expected formulaas: {calc['valid_formulas']}")
+                        print(f"Expected formulas: {calc['valid_formulas']}")
                         
                         for valid_formula in calc['valid_formulas']:
                             if formula == valid_formula:
-                                score += calc.get('points', {}).get('formula', 2)
-                                formula_points = calc.get('points', {}).get('formula', 2)
+                                points_to_add = calc.get('points', {}).get('formula', 0)
+                                score += points_to_add
+                                formula_points = points_to_add
                                 break
                         
                         if formula_points == 0:
-                            feedback.append(f"Incorrect formula in cell {cell}")
+                            formula_feedback = [
+                                f"Cell {cell} Formula Check:",
+                                f"  - Received: {formula}",
+                                f"  - Expected one of: {', '.join(calc['valid_formulas'])}"
+                            ]
+                            feedback.extend(formula_feedback)
+                    else:
+                        feedback.append(f"Cell {cell}: No formula found (cell contains static value)")
 
-                # Value check
+                # Value check with type handling
                 if 'expected_value' in calc:
-                    try:
-                        # Safely handle potential None or non-numeric values
-                        if cell_value is not None:
-                            rounded_value = round(float(cell_value), 2)
-                            if rounded_value == calc['expected_value']:
-                                score += calc.get('points', {}).get('value', 2)
-                            else:
-                                feedback.append(f"Incorrect value in cell {cell}. Expected {calc['expected_value']}, got {rounded_value}")
-                        else:
-                            feedback.append(f"Cell {cell} contains no value")
-                    except (TypeError, ValueError) as ve:
-                        feedback.append(f"Error processing value in cell {cell}: {ve}")
+                    value_match = compare_values(cell_value, calc['expected_value'])
+                    if value_match:
+                        score += calc.get('points', {}).get('value', 0)
+                    else:
+                        value_feedback = [
+                            f"Cell {cell} Value Check:",
+                            f"  - Received: {cell_value}",
+                            f"  - Expected: {calc['expected_value']}"
+                        ]
+                        feedback.extend(value_feedback)
 
             except Exception as e:
                 print(f"Error processing cell {cell}: {e}")
                 feedback.append(f"Error processing cell {cell}: {e}")
 
-        return min(score, total_points), total_points, feedback
+        return score, total_points, feedback
 
     except Exception as e:
         print(f"Error grading Project 1: {e}")
