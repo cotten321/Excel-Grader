@@ -568,3 +568,6 @@ def grade_project_1(student_path):
         print(f"Error grading Project 1: {e}")
         traceback.print_exc()
         return 0, total_points, [f"An error occurred during grading: {str(e)}"]
+      
+#def grade_project_3(student_path):
+    

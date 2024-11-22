@@ -1,13 +1,17 @@
 import os
 import pandas as pd
-from tkinter import Tk, filedialog, Label, Button, messagebox
-from tkinter import ttk
-from openpyxl import Workbook, load_workbook
+import customtkinter as ctk
+from tkinter import filedialog, messagebox
+from openpyxl import Workbook
 from openpyxl.styles import NamedStyle, PatternFill
 from openpyxl.utils.exceptions import InvalidFileException
 
 # Import the grading algorithms from grading_algorithms.py
 from grading_algorithms import *
+
+# Set the appearance mode and color theme
+ctk.set_appearance_mode("light")
+ctk.set_default_color_theme("blue")
 
 def get_grading_function(challenge_number):
     grading_functions = {
@@ -18,7 +22,6 @@ def get_grading_function(challenge_number):
     }
     return grading_functions.get(challenge_number), grading_functions
 
-# Function to process student submissions
 def process_submissions(folder_path, challenge_number, output_path):
     grading_function, _ = get_grading_function(challenge_number)
     if not grading_function:
@@ -82,18 +85,18 @@ def process_submissions(folder_path, challenge_number, output_path):
     ws = wb.active
     ws.title = "Grading Report"
     
-    # Create named styles
+    # Create named styles (keep your existing style creation code)
     outstanding_style = NamedStyle(name='Outstanding')
-    outstanding_style.fill = PatternFill(start_color='C099E8', end_color='C099E8', fill_type='solid')  # Purple
+    outstanding_style.fill = PatternFill(start_color='C099E8', end_color='C099E8', fill_type='solid')
     
     good_style = NamedStyle(name='Good')
-    good_style.fill = PatternFill(start_color='41DF45', end_color='41DF45', fill_type='solid')  # Green
+    good_style.fill = PatternFill(start_color='41DF45', end_color='41DF45', fill_type='solid')
     
     neutral_style = NamedStyle(name='Neutral')
-    neutral_style.fill = PatternFill(start_color='FFFF99', end_color='FFFF99', fill_type='solid')  #  Yellow
+    neutral_style.fill = PatternFill(start_color='FFFF99', end_color='FFFF99', fill_type='solid')
     
     bad_style = NamedStyle(name='Bad')
-    bad_style.fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')  # Red
+    bad_style.fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
     
     # Add styles to workbook
     if 'Outstanding' not in wb.named_styles:
@@ -127,68 +130,180 @@ def process_submissions(folder_path, challenge_number, output_path):
     wb.save(output_file)        
     messagebox.showinfo("Success", f"Grading complete! Report saved to: {output_file}")
 
-# Function to set up the GUI
-def setup_gui():
-    root = Tk()
-    root.title("Excel Grader")
-    root.geometry("300x400")
+class ExcelGraderApp(ctk.CTk):
+    def __init__(self):
+        super().__init__()
 
-    # Get grading function labels for the combobox
-    _, grading_functions = get_grading_function(None)
-    challenge_labels = list(grading_functions.keys())
+        # Configure window
+        self.title("Excel Grader")
+        self.geometry("500x650")
+        self.configure(fg_color="#F0F0F0")  # Light gray background
 
-    # Variables to store the full paths
-    folder_full_path = None
-    output_full_path = None
+        # Main container with soft rounded corners
+        self.main_frame = ctk.CTkFrame(
+            self, 
+            corner_radius=20, 
+            fg_color="white", 
+            bg_color="#F0F0F0"
+        )
+        self.main_frame.pack(pady=20, padx=20, fill="both", expand=True)
 
-    def select_folder():
-        nonlocal folder_full_path
+        # Title with modern typography
+        self.title_label = ctk.CTkLabel(
+            self.main_frame, 
+            text="Excel Grader", 
+            font=("San Francisco", 32, "bold"),
+            text_color="#333333"
+        )
+        self.title_label.pack(pady=(30, 20))
+
+        # Submission Folder Section
+        self.create_folder_section(
+            "Student Submissions", 
+            self.select_submissions_folder
+        )
+
+        # Challenge Selection Section
+        self.challenge_label = ctk.CTkLabel(
+            self.main_frame, 
+            text="Select Challenge", 
+            font=("San Francisco", 16),
+            text_color="#666666"
+        )
+        self.challenge_label.pack(anchor="w", padx=40, pady=(20, 5))
+
+        self.challenges = [
+            "Project 1: Cafe Bloom", 
+            "1.1: Import data into workbooks", 
+            "2: Navigate within workbooks", 
+            "3.1: Format worksheets and workbooks"
+        ]
+
+        self.challenge_combobox = ctk.CTkComboBox(
+            self.main_frame, 
+            values=self.challenges,
+            width=400,
+            height=40,
+            border_width=1,
+            border_color="#CCCCCC",
+            dropdown_hover_color="#E0E0E0",
+            button_hover_color="#E0E0E0",
+            font=("San Francisco", 14)
+        )
+        self.challenge_combobox.pack(pady=10)
+
+        # Output Folder Section
+        self.create_folder_section(
+            "Output Location", 
+            self.select_output_folder
+        )
+
+        # Start Grading Button with modern styling
+        self.start_button = ctk.CTkButton(
+            self.main_frame, 
+            text="Start Grading", 
+            command=self.start_grading,
+            width=400,
+            height=50,
+            corner_radius=25,
+            font=("San Francisco", 16, "bold"),
+            fg_color="#007AFF",  # Apple's blue
+            hover_color="#0056b3"
+        )
+        self.start_button.pack(pady=(30, 20))
+
+        # State variables
+        self.submissions_folder = None
+        self.output_folder = None
+
+    def create_folder_section(self, label_text, browse_command):
+        # Label
+        label = ctk.CTkLabel(
+            self.main_frame, 
+            text=label_text, 
+            font=("San Francisco", 16),
+            text_color="#666666"
+        )
+        label.pack(anchor="w", padx=40, pady=(20, 5))
+
+        # Container for entry and button
+        container = ctk.CTkFrame(
+            self.main_frame, 
+            fg_color="transparent"
+        )
+        container.pack(pady=10)
+
+        # Entry field
+        entry = ctk.CTkEntry(
+            container, 
+            width=330,
+            height=40,
+            placeholder_text=f"Select {label_text.lower()}",
+            border_width=1,
+            border_color="#CCCCCC",
+            font=("San Francisco", 14)
+        )
+        entry.pack(side="left", padx=(0, 10))
+
+        # Browse button
+        browse_btn = ctk.CTkButton(
+            container, 
+            text="Browse", 
+            command=lambda: self.browse_folder(entry, browse_command),
+            width=60,
+            height=40,
+            corner_radius=10,
+            fg_color="#F2F2F7",  # Very light gray
+            text_color="#007AFF",  # Apple's blue
+            hover_color="#E0E0E5"
+        )
+        browse_btn.pack(side="right")
+
+        # Store references for later use
+        if label_text == "Student Submissions":
+            self.submissions_entry = entry
+        else:
+            self.output_entry = entry
+
+    def browse_folder(self, entry_widget, selection_method):
+        selection_method()
+        entry_widget.configure(state="normal")
+        entry_widget.delete(0, "end")
+        entry_widget.insert(0, self.submissions_folder if "submissions" in entry_widget.cget("placeholder_text").lower() else self.output_folder)
+        entry_widget.configure(state="disabled")
+
+    def select_submissions_folder(self):
         folder = filedialog.askdirectory()
         if folder:
-            folder_full_path = folder
-            parent_folder = os.path.basename(os.path.normpath(folder))
-            folder_label.config(text=parent_folder)
+            self.submissions_folder = folder
+            self.submissions_entry.configure(state="normal")
+            self.submissions_entry.delete(0, "end")
+            self.submissions_entry.insert(0, folder)
+            self.submissions_entry.configure(state="readonly")
 
-    def select_output():
-        nonlocal output_full_path
-        output = filedialog.askdirectory()
-        if output:
-            output_full_path = output
-            parent_folder = os.path.basename(os.path.normpath(output))
-            output_label.config(text=parent_folder)
+    def select_output_folder(self):
+        folder = filedialog.askdirectory()
+        if folder:
+            self.output_folder = folder
+            self.output_entry.configure(state="normal")
+            self.output_entry.delete(0, "end")
+            self.output_entry.insert(0, folder)
+            self.output_entry.configure(state="readonly")
 
-    def start_grading():
-        nonlocal folder_full_path, output_full_path
-
-        folder_path = folder_full_path
-        challenge_number = challenge_combobox.get()
-        output_path = output_full_path
-
-        if not folder_path or not challenge_number or not output_path:
+    def start_grading(self):
+        if not self.submissions_folder or not self.output_folder or not self.challenge_combobox.get():
             messagebox.showwarning("Input Error", "Please select all required inputs.")
             return
 
-        process_submissions(folder_path, challenge_number, output_path)
+        process_submissions(
+            self.submissions_folder, 
+            self.challenge_combobox.get(), 
+            self.output_folder
+        )
 
-    # Create GUI components
-    Label(root, text="Select Student Submissions Folder:").pack(pady=5)
-    folder_label = Label(root, text="", wraplength=350)
-    folder_label.pack(pady=5)
-    Button(root, text="Browse", command=select_folder).pack(pady=5)
+def main():
+    app = ExcelGraderApp()
+    app.mainloop()
 
-    Label(root, text="Select Challenge to Grade:").pack(pady=5)
-    challenge_combobox = ttk.Combobox(root, values=challenge_labels)
-    challenge_combobox.pack(pady=5)
-
-    Label(root, text="Select Output Location:").pack(pady=5)
-    output_label = Label(root, text="", wraplength=350)
-    output_label.pack(pady=5)
-    Button(root, text="Browse", command=select_output).pack(pady=5)
-
-    Button(root, text="Start Grading", command=start_grading).pack(pady=20)
-
-    root.mainloop()
-
-# Entry point for the program
 if __name__ == "__main__":
-    setup_gui()
+    main()
