@@ -5,14 +5,16 @@ from tkinter import filedialog, messagebox
 from openpyxl import Workbook
 from openpyxl.styles import NamedStyle, PatternFill
 from openpyxl.utils.exceptions import InvalidFileException
+import threading
 
 # Import the grading algorithms from grading_algorithms.py
 from grading_algorithms import *
 
-# Set the appearance mode and color theme
+# Set the appearance mode and color theme of overall tkinter window
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
+#
 def get_grading_function(challenge_number):
     grading_functions = {
         "Project 1: Cafe Bloom": grade_project_1,
@@ -22,70 +24,61 @@ def get_grading_function(challenge_number):
     }
     return grading_functions.get(challenge_number), grading_functions
 
-def process_submissions(folder_path, challenge_number, output_path):
+def process_submissions(folder_path, challenge_number, output_path, progress_callback, completion_callback):
     grading_function, _ = get_grading_function(challenge_number)
+    #Handles if user enters wrong function
     if not grading_function:
-        messagebox.showerror("Grading Error", f"No grading function available for challenge or project {challenge_number}.")
+        completion_callback(False, "No grading function available.")
         return
 
     grades = []
+    student_folders = [f for f in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, f))]
+    total_students = len(student_folders)
 
-    # Iterate through student folders
-    for student_folder in os.listdir(folder_path):
+    for index, student_folder in enumerate(student_folders, 1):
         student_folder_path = os.path.join(folder_path, student_folder)
         
-        if os.path.isdir(student_folder_path):
-            # Look for an Excel file inside the student's folder
-            for file in os.listdir(student_folder_path):
-                if file.endswith(".xlsx"):
-                    student_file_path = os.path.join(student_folder_path, file)
-                    print(f"Grading {student_file_path}")
+        for file in os.listdir(student_folder_path):
+            if file.endswith(".xlsx"):
+                student_file_path = os.path.join(student_folder_path, file)
+                print(f"Grading {student_file_path}")
 
-                    # Try to load the workbook and process
-                    try:
-                        # Use the selected grading function
-                        score, total_points, feedback = grading_function(student_file_path)
-                        percentage = round((score / total_points) * 100, 2) if total_points > 0 else 0
+                try:
+                    score, total_points, feedback = grading_function(student_file_path)
+                    percentage = round((score / total_points) * 100, 2) if total_points > 0 else 0
 
-                        # Add the result to the grades list
-                        grades.append({
-                            "Student": student_folder,
-                            "Score": score,
-                            "Total Points": total_points,
-                            "Percentage": percentage,
-                            "": "",  # Empty column for easier viewing
-                            "Feedback": "; ".join(feedback)  # Join feedback items as a single string.
-                        })
+                    grades.append({
+                        "Student": student_folder,
+                        "Score": score,
+                        "Total Points": total_points,
+                        "Percentage": percentage,
+                        "": "",
+                        "Feedback": "; ".join(feedback)
+                    })
+                except Exception as e:
+                    grades.append({
+                        "Student": student_folder,
+                        "Score": 0,
+                        "Total Points": 100,
+                        "Percentage": 0,
+                        "": "",
+                        "Feedback": f"Error: {str(e)}"
+                    })
+        
+        # Update progress
+        progress = int((index / total_students) * 100)
+        progress_callback(progress)
 
-                    except InvalidFileException as e:
-                        feedback = f"Error loading file: {e}"
-                        grades.append({
-                            "Student": student_folder,
-                            "Score": 0,
-                            "Total Points": 100,
-                            "Percentage": 0,
-                            "": "",
-                            "Feedback": feedback
-                        })
-                    except Exception as e:
-                        grades.append({
-                            "Student": student_folder,
-                            "Score": 0,
-                            "Total Points": 100,
-                            "Percentage": 0,
-                            "": "",
-                            "Feedback": f"Error: {str(e)}"
-                        })
-
-    # Convert grades list to a DataFrame and export to Excel
+    # Export to Excel
     df = pd.DataFrame(grades)
-    
     output_file = os.path.join(output_path, "grades_report.xlsx")
+    
+    # Set workbook to grading report
     wb = Workbook()
     ws = wb.active
     ws.title = "Grading Report"
     
-    # Create named styles (keep your existing style creation code)
+    # Create named styles 
     outstanding_style = NamedStyle(name='Outstanding')
     outstanding_style.fill = PatternFill(start_color='C099E8', end_color='C099E8', fill_type='solid')
     
@@ -128,7 +121,9 @@ def process_submissions(folder_path, challenge_number, output_path):
             
     # Save the report
     wb.save(output_file)        
-    messagebox.showinfo("Success", f"Grading complete! Report saved to: {output_file}")
+    
+    # Signal completion
+    completion_callback(True, f"Grading complete! Report saved to: {output_file}")
 
 class ExcelGraderApp(ctk.CTk):
     def __init__(self):
@@ -136,7 +131,7 @@ class ExcelGraderApp(ctk.CTk):
 
         # Configure window
         self.title("Excel Grader")
-        self.geometry("500x650")
+        self.geometry("600x800")
         self.configure(fg_color="#F0F0F0")  # Light gray background
 
         # Main container with soft rounded corners
@@ -148,7 +143,7 @@ class ExcelGraderApp(ctk.CTk):
         )
         self.main_frame.pack(pady=20, padx=20, fill="both", expand=True)
 
-        # Title with modern typography
+        # Title 
         self.title_label = ctk.CTkLabel(
             self.main_frame, 
             text="Excel Grader", 
@@ -156,6 +151,18 @@ class ExcelGraderApp(ctk.CTk):
             text_color="#333333"
         )
         self.title_label.pack(pady=(30, 20))
+        
+        # Progress Bar
+        self.progress_bar = ctk.CTkProgressBar(
+            self.main_frame, 
+            width=500, 
+            height=20,
+            corner_radius=10,
+            fg_color="#F0F0F0",  # Light gray bar background
+            progress_color="#007AFF"  # Bright blue progress
+        )
+        self.progress_bar.pack(pady=(10, 20))
+        self.progress_bar.set(0)  # Initial state
 
         # Submission Folder Section
         self.create_folder_section(
@@ -211,6 +218,15 @@ class ExcelGraderApp(ctk.CTk):
             hover_color="#0056b3"
         )
         self.start_button.pack(pady=(30, 20))
+        
+        # Status Label
+        self.status_label = ctk.CTkLabel(
+            self.main_frame, 
+            text="", 
+            font=("San Francisco", 14),
+            text_color="#A0A0A0"
+        )
+        self.status_label.pack(pady=(10, 20))
 
         # State variables
         self.submissions_folder = None
@@ -295,11 +311,33 @@ class ExcelGraderApp(ctk.CTk):
             messagebox.showwarning("Input Error", "Please select all required inputs.")
             return
 
-        process_submissions(
-            self.submissions_folder, 
-            self.challenge_combobox.get(), 
-            self.output_folder
-        )
+        # Disable start button during grading
+        self.start_button.configure(state="disabled")
+        self.progress_bar.set(0)
+        self.status_label.configure(text="Grading in progress...")
+
+        def progress_update(value):
+            self.progress_bar.set(value / 100)
+
+        def grading_complete(success, message):
+            self.start_button.configure(state="normal")
+            self.progress_bar.set(1 if success else 0)
+            self.status_label.configure(text=message)
+            if success:
+                messagebox.showinfo("Success", message)
+
+        # Start grading in a separate thread
+        threading.Thread(
+            target=process_submissions, 
+            args=(
+                self.submissions_folder, 
+                self.challenge_combobox.get(), 
+                self.output_folder,
+                progress_update,
+                grading_complete
+            ), 
+            daemon=True
+        ).start()
 
 def main():
     app = ExcelGraderApp()
