@@ -510,7 +510,7 @@ def grade_project_1(student_path):
                 # For text comparisons, convert both to strings and compare
                 return str(actual_value).strip() == str(expected_value).strip()
 
-        # Perform detailed checks for each calculation
+        # Perform checks for each calculation
         for calc in calc_checks:
             cell = calc['cell']
             try:
