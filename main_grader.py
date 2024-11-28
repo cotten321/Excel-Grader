@@ -10,7 +10,7 @@ import threading
 # Import the grading algorithms from grading_algorithms.py
 from grading_algorithms import *
 
-# Set the appearance mode and color theme of overall tkinter window
+# Set the appearance mode and color theme of tkinter window
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
@@ -110,18 +110,21 @@ def process_submissions(folder_path, challenge_number, output_path, progress_cal
         
         # Apply styles based on the score
         cell = ws[f"A{index + 2}"]
+        # User score over 100 (achieved bonus points)
         if row["Percentage"] > 100:
             cell.style = "Outstanding"
+        # User score over 85
         elif row["Percentage"] > 85:
             cell.style = "Good"
-        elif 65 <= row["Percentage"] <= 85:
+            # User score between 70 and 85
+        elif 70 <= row["Percentage"] <= 85:
             cell.style = "Neutral"
         else:
             cell.style = "Bad"
             
     # Save the report
-    wb.save(output_file)        
-    
+    wb.save(output_file)
+         
     # Signal completion
     completion_callback(True, f"Grading complete! Report saved to: {output_file}")
 
