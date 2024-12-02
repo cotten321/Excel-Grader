@@ -12,6 +12,7 @@ from grading_algorithms import *
 def get_grading_function(challenge_number):
     grading_functions = {
         "Project 1: Cafe Bloom": grade_project_1,
+        "Project 2: Sports Event Management": grade_project_2,
         "1.1: Import data into workbooks": grade_challenge_1_1,
         "2: Navigate within workbooks": grade_challenge_2,
         "3.1: Format worksheets and workbooks": grade_challenge_3_1
