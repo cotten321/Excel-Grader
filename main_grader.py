@@ -26,6 +26,7 @@ def get_grading_function(challenge_number):
 
 def process_submissions(folder_path, challenge_number, output_path, progress_callback, completion_callback):
     grading_function, _ = get_grading_function(challenge_number)
+    
     #Handles if user enters wrong function
     if not grading_function:
         completion_callback(False, "No grading function available.")
@@ -116,9 +117,10 @@ def process_submissions(folder_path, challenge_number, output_path, progress_cal
         # User score over 85
         elif row["Percentage"] > 85:
             cell.style = "Good"
-            # User score between 70 and 85
+        # User score between 70 and 85
         elif 70 <= row["Percentage"] <= 85:
             cell.style = "Neutral"
+        # User score under 70
         else:
             cell.style = "Bad"
             
@@ -137,7 +139,7 @@ class ExcelGraderApp(ctk.CTk):
         self.geometry("600x800")
         self.configure(fg_color="#F0F0F0")  # Light gray background
 
-        # Main container with soft rounded corners
+        # Main container with rounded corners
         self.main_frame = ctk.CTkFrame(
             self, 
             corner_radius=20, 
@@ -217,7 +219,7 @@ class ExcelGraderApp(ctk.CTk):
             height=50,
             corner_radius=25,
             font=("San Francisco", 16, "bold"),
-            fg_color="#007AFF",  # Apple's blue
+            fg_color="#007AFF",  # Blue
             hover_color="#0056b3"
         )
         self.start_button.pack(pady=(30, 20))
@@ -273,7 +275,7 @@ class ExcelGraderApp(ctk.CTk):
             height=40,
             corner_radius=10,
             fg_color="#F2F2F7",  # Very light gray
-            text_color="#007AFF",  # Apple's blue
+            text_color="#007AFF",  # Blue
             hover_color="#E0E0E5"
         )
         browse_btn.pack(side="right")
