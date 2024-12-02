@@ -560,3 +560,150 @@ def grade_project_1(student_path):
         traceback.print_exc()
         return 0, total_points, [f"An error occurred during grading: {str(e)}"]
       
+def grade_project_2(student_path):
+    try:
+        # First pass: Check formulas (data_only=False)
+        wb_formulas = openpyxl.load_workbook(student_path, data_only=False)
+        # Second pass: Check values (data_only=True)
+        wb_values = openpyxl.load_workbook(student_path, data_only=True)
+
+        # Initialize scoring variables
+        score = 0
+        total_points = 50
+        feedback = []
+
+        # Check if all required sheets are present
+        required_sheets = ["Report", "Participants", "Times", "Names & Emails"]
+        sheet_names = wb_formulas.sheetnames
+        if all(sheet in sheet_names for sheet in required_sheets):
+            score += 4
+        else:
+            feedback.append("Sheet structure incorrect: Required sheets not found or incorrectly named.")
+
+        # Sheet 1: "Report" - Cell Values Check
+        report_sheet = wb_values["Report"]
+        report_values = {
+            "B2": 917, "B3": 283, "B4": 332,
+            "D2": 574, "D3": 689, "D4": 308,
+            "F2": 801, "F3": 931, "F4": 407,
+            "H2": 11, "H3": 478, "H4": 70,
+            "B7": 522, "B8": 49
+        }
+        points_per_cell = 1
+        for cell, expected_value in report_values.items():
+            if report_sheet[cell].value == expected_value:
+                score += points_per_cell
+            else:
+                feedback.append(f"Incorrect value in Report sheet at {cell}. Expected {expected_value}, found {report_sheet[cell].value}.")
+
+        # Sheet 2: "Participants"
+        participants_sheet = wb_formulas["Participants"]
+        # Check for the presence of a table in Participants sheet
+        if len(participants_sheet.tables) > 0:
+            score += 3
+        else:
+            feedback.append("No table found in Participants sheet.")
+
+        # Check the number of rows in Participants sheet
+        num_rows = participants_sheet.max_row
+        if num_rows == 1001:
+            score += 5
+        elif num_rows == 523:
+            score += 5
+        else:
+            feedback.append(f"Incorrect number of rows in Participants sheet. Found {num_rows} rows.")
+
+        # Header Formatting Check
+        try:
+            header_font = participants_sheet["A1"].font
+            if header_font.bold and header_font.size == 13:  # Assuming Heading 2 style has size 13 and bold
+                score += 3
+            else:
+                feedback.append("Incorrect header formatting in Participants sheet. Expected 'Heading 2' style (bold, size 13).")
+        except AttributeError:
+            feedback.append("Error checking header formatting in Participants sheet.")
+
+        # Check if top row is frozen in Participants sheet
+        if participants_sheet.freeze_panes == "A2":
+            score += 3
+        else:
+            feedback.append("Top row is not frozen in Participants sheet.")
+
+        # Sheet 3: "Times"
+        times_sheet = wb_formulas["Times"]
+        # Check for the presence of a table in Times sheet
+        if len(times_sheet.tables) > 0:
+            score += 3
+        else:
+            feedback.append("No table found in Times sheet.")
+
+        # Check the number of rows in Times sheet
+        num_rows = times_sheet.max_row
+        if num_rows == 523:
+            score += 3
+        else:
+            feedback.append(f"Incorrect number of rows in Times sheet. Found {num_rows} rows.")
+
+        # Header Formatting Check
+        try:
+            header_font = times_sheet["A1"].font
+            if header_font.bold and header_font.size == 13:  # Assuming Heading 2 style has size 13 and bold
+                score += 3
+            else:
+                feedback.append("Incorrect header formatting in Times sheet. Expected 'Heading 2' style (bold, size 13).")
+        except AttributeError:
+            feedback.append("Error checking header formatting in Times sheet.")
+
+        # Check if top row is frozen in Times sheet
+        if times_sheet.freeze_panes == "A2":
+            score += 3
+        else:
+            feedback.append("Top row is not frozen in Times sheet.")
+
+        # Sheet 4: "Names & Emails"
+        names_emails_sheet = wb_values["Names & Emails"]
+        match_names = True
+        match_emails = True
+
+        # List of cells that should be empty in the "Names & Emails" sheet, column B
+        allowed_empty_cells = [
+            3, 17, 18, 33, 61, 78, 79, 80, 85, 113, 127, 128, 138, 148, 153, 159, 161,
+            183, 187, 190, 191, 205, 246, 250, 252, 279, 284, 289, 302, 309, 312, 329,
+            347, 361, 365, 369, 387, 394, 398, 422, 442, 458, 467, 489, 490, 493, 497,
+            499, 507
+        ]
+
+        for row in range(2, 524):
+            participant_name = wb_values["Participants"][f"B{row}"].value
+            names_emails_name = names_emails_sheet[f"A{row}"].value
+
+            if participant_name is not None and names_emails_name != participant_name.upper():
+                match_names = False
+                feedback.append(f"Incorrect name format at Names & Emails sheet cell A{row}. Expected uppercase.")
+                break
+
+            participant_email = wb_values["Participants"][f"E{row}"].value
+            names_emails_email = names_emails_sheet[f"B{row}"].value
+
+            if row in allowed_empty_cells:
+                if names_emails_email is not None:
+                    match_emails = False
+                    feedback.append(f"Cell B{row} in Names & Emails sheet should be empty but contains data.")
+                    break
+            else:
+                if participant_email is not None and names_emails_email != participant_email.lower():
+                    match_emails = False
+                    feedback.append(f"Incorrect email format at Names & Emails sheet cell B{row}. Expected lowercase.")
+                    break
+
+        if match_names:
+            score += 3
+        if match_emails:
+            score += 3
+
+        return score, total_points, feedback
+
+    except Exception as e:
+        print(f"Error grading Project 2: {e}")
+        traceback.print_exc()
+        return 0, total_points, [f"An error occurred during grading: {str(e)}"]

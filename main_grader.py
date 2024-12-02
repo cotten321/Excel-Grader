@@ -4,8 +4,8 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from openpyxl import Workbook
 from openpyxl.styles import NamedStyle, PatternFill
-from openpyxl.utils.exceptions import InvalidFileException
 import threading
+#import subprocess
 
 # Import the grading algorithms from grading_algorithms.py
 from grading_algorithms import *
@@ -18,6 +18,7 @@ ctk.set_default_color_theme("blue")
 def get_grading_function(challenge_number):
     grading_functions = {
         "Project 1: Cafe Bloom": grade_project_1,
+        "Project 2: Marathon Participants": grade_project_2,
         "1.1: Import data into workbooks": grade_challenge_1_1,
         "2: Navigate within workbooks": grade_challenge_2,
         "3.1: Format worksheets and workbooks": grade_challenge_3_1
@@ -185,7 +186,8 @@ class ExcelGraderApp(ctk.CTk):
         self.challenge_label.pack(anchor="w", padx=40, pady=(20, 5))
 
         self.challenges = [
-            "Project 1: Cafe Bloom", 
+            "Project 1: Cafe Bloom",
+            "Project 2: Marathon Participants",
             "1.1: Import data into workbooks", 
             "2: Navigate within workbooks", 
             "3.1: Format worksheets and workbooks"
@@ -328,8 +330,13 @@ class ExcelGraderApp(ctk.CTk):
             self.start_button.configure(state="normal")
             self.progress_bar.set(1 if success else 0)
             self.status_label.configure(text=message)
+
             if success:
-                messagebox.showinfo("Success", message)
+                # Extract the full path of the generated report from the message
+                report_path = message.split(": ")[-1]
+
+                # Show custom completion dialog
+                self.show_completion_dialog(report_path)
 
         # Start grading in a separate thread
         threading.Thread(
@@ -343,6 +350,68 @@ class ExcelGraderApp(ctk.CTk):
             ), 
             daemon=True
         ).start()
+        
+    # Create a custom dialog for grading completion with Open Report and Close buttons   
+    def show_completion_dialog(self, report_path):
+        
+        # Create a top-level window
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Grading Complete")
+        dialog.geometry("350x200")
+        dialog.resizable(False, False)
+        dialog.grab_set()  # Make the dialog modal
+
+        # Success message label
+        message_label = ctk.CTkLabel(
+            dialog, 
+            text="Grading is complete!", 
+            font=("San Francisco", 18, "bold"),
+            text_color="#333333"
+        )
+        message_label.pack(pady=(30, 20))
+
+        # Button frame
+        button_frame = ctk.CTkFrame(dialog, fg_color="transparent")
+        button_frame.pack(pady=20)
+
+        # Open Report button
+        open_button = ctk.CTkButton(
+            button_frame, 
+            text="Open Report", 
+            command=lambda: self.open_excel_report(report_path, dialog),
+            width=120,
+            height=40,
+            corner_radius=25,
+            fg_color="#007AFF",  # Blue
+            hover_color="#0056b3"
+        )
+        open_button.pack(side="left", padx=10)
+
+        # Close button
+        close_button = ctk.CTkButton(
+            button_frame, 
+            text="Close", 
+            command=dialog.destroy,
+            width=120,
+            height=40,
+            corner_radius=25,
+            fg_color="#F2F2F7",  # Light gray
+            text_color="#007AFF",
+            hover_color="#E0E0E5"
+        )
+        close_button.pack(side="right", padx=10)    
+    # Open the Excel report using the default system application.    
+    def open_excel_report(self, file_path, parent_dialog=None):
+
+        try:
+            if os.name == 'nt':  # Windows File Explorer
+                os.startfile(file_path)
+                
+            # Close the parent dialog if provided
+            if parent_dialog:
+                parent_dialog.destroy()
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not open the report: {str(e)}")
 
 def main():
     app = ExcelGraderApp()
