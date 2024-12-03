@@ -19,9 +19,9 @@ def get_grading_function(challenge_number):
     grading_functions = {
         "Project 1: Cafe Bloom": grade_project_1,
         "Project 2: Marathon Participants": grade_project_2,
-        "1.1: Import data into workbooks": grade_challenge_1_1,
-        "2: Navigate within workbooks": grade_challenge_2,
-        "3.1: Format worksheets and workbooks": grade_challenge_3_1
+        "Skill: Import data into workbooks": grade_challenge_1_1,
+        "Skill: Navigate within workbooks": grade_challenge_2,
+        "Skill: Format worksheets and workbooks": grade_challenge_3_1
     }
     return grading_functions.get(challenge_number), grading_functions
 
@@ -110,8 +110,8 @@ def process_submissions(folder_path, challenge_number, output_path, progress_cal
     for index, row in df.iterrows():
         ws.append(row.tolist())
         
-        # Apply styles based on the score
-        cell = ws[f"A{index + 2}"]
+        # Apply styles based on the score to the score column
+        cell = ws[f"B{index + 2}"]
         # User score over 100 (achieved bonus points)
         if row["Percentage"] > 100:
             cell.style = "Outstanding"
@@ -140,7 +140,7 @@ class ExcelGraderApp(ctk.CTk):
         self.geometry("600x800")
         self.configure(fg_color="#F0F0F0")  # Light gray background
 
-        # Main container with rounded corners
+        # Main container
         self.main_frame = ctk.CTkFrame(
             self, 
             corner_radius=20, 
@@ -188,9 +188,9 @@ class ExcelGraderApp(ctk.CTk):
         self.challenges = [
             "Project 1: Cafe Bloom",
             "Project 2: Marathon Participants",
-            "1.1: Import data into workbooks", 
-            "2: Navigate within workbooks", 
-            "3.1: Format worksheets and workbooks"
+            "Skill: Import data into workbooks", 
+            "Skill: Navigate within workbooks", 
+            "Skill: Format worksheets and workbooks"
         ]
 
         self.challenge_combobox = ctk.CTkComboBox(
