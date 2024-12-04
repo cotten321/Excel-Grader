@@ -1,8 +1,8 @@
 import openpyxl
 import traceback
 from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.header_footer import _HeaderFooterPart
 
+#prev
 def grade_challenge_1_1(student_path):
     try:
         # Load workbooks and select active sheets
@@ -85,7 +85,7 @@ def grade_challenge_2(student_path):
         # 1. Searching for data (4 points)
         # Check if the cell with the employee making $75,000 is highlighted in yellow
         target_cell = "B144"  # The cell containing the employee's name making $75,000
-        if student_ws[target_cell].fill.start_color.rgb == "FFFFFF00":  # Yellow color in Excel
+        if student_ws[target_cell].fill.start_color.rgb == "FFFFFF00":  # Yellow
             score += 2
         else:
             feedback.append("Cell B144 (name of employee with $75,000 salary) is not highlighted in yellow.")
@@ -180,16 +180,6 @@ def grade_challenge_3_1(student_path):
             round(float(student_ws.page_margins.top), 2) == 0.75 and 
             round(float(student_ws.page_margins.bottom), 2) == 0.75):
             score += 2
-
-        # Scale to Fit to 1 page is ungradeable at this time
-
-        # Check for narrow margins
-        if (student_ws.page_margins.left == 0.25 and 
-            student_ws.page_margins.right == 0.25 and
-            student_ws.page_margins.top == 0.75 and 
-            student_ws.page_margins.bottom == 0.75):
-            score += 1.5
-
         else:
             feedback.append("Margins are not set to Narrow.")
 
@@ -264,235 +254,244 @@ def grade_challenge_3_1(student_path):
         return 0, total_points, ["An error occurred during grading."]
 
 def grade_project_1(student_path):
+    #Function to help with edge cases of users sorting tables and altering data locations
+    def verify_unique_countries_and_prices(analysis_sheet_values):
+        expected_country_prices = {
+            'Taiwan': 10.15,
+            'United States': 9.24,
+            'Japan': 10.75,
+            'Hawaii': 18.15,
+            'Hong Kong': 15.62,
+            'Guatemala': 3.55,
+            'China': 22.53,
+            'Canada': 4.99,
+            'England': 50.41,
+            'Australia': 69.00,
+            'Kenya': 6.91
+        }
+        country_prices = {}
+        feedback = []
+        score = 0
+
+        for row in range(4, 15):
+            country = analysis_sheet_values.cell(row=row, column=1).value
+            price = analysis_sheet_values.cell(row=row, column=2).value
+
+            if country and price is not None:
+                country = str(country).strip()
+                try:
+                    country_prices[country] = round(float(price), 2)
+                except ValueError:
+                    feedback.append(f"Non-numeric price for {country}: {price}")
+
+        missing_countries = set(expected_country_prices.keys()) - set(country_prices.keys())
+        extra_countries = set(country_prices.keys()) - set(expected_country_prices.keys())
+
+        if missing_countries:
+            feedback.append(f"Missing countries: {', '.join(missing_countries)}")
+        if extra_countries:
+            feedback.append(f"Extra countries found: {', '.join(extra_countries)}")
+
+        price_matches = 0
+        total_countries = len(expected_country_prices)
+
+        for country, expected_price in expected_country_prices.items():
+            if country in country_prices:
+                if abs(country_prices[country] - expected_price) < 0.01:
+                    price_matches += 1
+                else:
+                    feedback.append(
+                        f"Incorrect price for {country}. Expected {expected_price}, Got {country_prices[country]}"
+                    )
+
+        country_score = 5 if len(country_prices) == total_countries else 1
+        price_score = (price_matches / total_countries) * 3
+        score = country_score + price_score
+        return score, feedback
+
+    
+    def verify_unique_countries_and_ratings(analysis_sheet):
+        # Dictionary of expected countries and ratings
+        expected_country_ratings = {
+            'Taiwan': 93.64,
+            'United States': 93.24,
+            'Japan': 92.38,
+            'Hawaii': 93.42,
+            'Hong Kong': 92.67,
+            'Guatemala': 90.5,
+            'China': 90,
+            'Canada': 93.6,
+            'England': 94.5,
+            'Australia': 96,
+            'Kenya': 94
+        }
+        
+        # Extract unique countries and their ratings from the sheet
+        country_ratings = {}
+        
+        # Assuming the data is in columns D and E, starting from row 4 to 14
+        for row in range(4, 15):
+            country = analysis_sheet.cell(row=row, column=4).value
+            rating = analysis_sheet.cell(row=row, column=5).value
+            
+            if country and rating is not None:
+                # Normalize country names (strip whitespace, handle potential capitalization issues)
+                country = str(country).strip()
+                
+                # Store the rating, allowing for small floating-point variations
+                country_ratings[country] = round(float(rating), 2)
+        
+        # Check if all expected countries are present
+        missing_countries = set(expected_country_ratings.keys()) - set(country_ratings.keys())
+        extra_countries = set(country_ratings.keys()) - set(expected_country_ratings.keys())
+        
+        feedback = []
+        score = 0
+        
+        if missing_countries:
+            feedback.append(f"Missing countries: {', '.join(missing_countries)}")
+        
+        if extra_countries:
+            feedback.append(f"Extra countries found: {', '.join(extra_countries)}")
+        
+        # Check ratings for each country
+        rating_matches = 0
+        total_countries = len(expected_country_ratings)
+        
+        for country, expected_rating in expected_country_ratings.items():
+            if country in country_ratings:
+                # Allow a small tolerance for floating-point comparisons
+                if abs(country_ratings[country] - expected_rating) < 0.01:
+                    rating_matches += 1
+                else:
+                    feedback.append(f"Incorrect rating for {country}. Expected {expected_rating}, Got {country_ratings[country]}")
+        
+        # Calculate scores
+        country_score = 4 if len(country_ratings) == total_countries else 2
+        rating_score = (rating_matches / total_countries) * 3
+        
+        score = country_score + rating_score
+        
+        return score, feedback
+
     try:
         # First pass: Check formulas (data_only=False)
         wb_formulas = openpyxl.load_workbook(student_path, data_only=False)
+        
         # Second pass: Check values (data_only=True)
         wb_values = openpyxl.load_workbook(student_path, data_only=True)
 
         # Initialize scoring variables
         score = 0
-        total_points = 50  # Base points
+        total_points = 60  # Base points
         feedback = []
 
-        # 1. Sheet Structure Check (2 points)
-        sheet_names = wb_formulas.sheetnames
-        if len(sheet_names) == 2 and "CoffeeData" in sheet_names and "Analysis" in sheet_names:
-            score += 2
-        else:
-            feedback.append("Incorrect number of sheets or sheet names.")
+        # Define sheet to be graded
+        analysis_sheet_values = wb_values["CoffeeAnalysis"]
 
-        # 2. Named Range Check
-        coffee_data_sheet = wb_formulas["CoffeeData"]
-        analysis_sheet = wb_formulas["Analysis"]
-
-        named_ranges = wb_formulas.defined_names
-        reviews_range_found = False
-        try:
-            for name in named_ranges.values():
-                if "Reviews" in str(name.name) and ("simplified_coffee[review]" in str(name.attr_text) or 
-                                                    "simplified_coffee[Review]" in str(name.attr_text)):
-                    reviews_range_found = True
-                    break
-        except Exception as e:
-            print(f"Error checking named ranges: {e}")
-            feedback.append(f"Error checking named ranges: {e}")
-
-        if reviews_range_found:
-            score += 2
-        else:
-            feedback.append("Named range 'Reviews' not found or incorrect.")
-
+        # Verify Unique Countries and Prices
+        unique_countries_score, unique_countries_feedback = verify_unique_countries_and_prices(analysis_sheet_values)
+        score += unique_countries_score
+        feedback.extend(unique_countries_feedback)
+        
+        # Verify Unique Countries and Ratings
+        unique_ratings_score, unique_ratings_feedback = verify_unique_countries_and_ratings(analysis_sheet_values)
+        score += unique_ratings_score
+        feedback.extend(unique_ratings_feedback)
+        
+        
         # Individual Calculations Grading
         calc_checks = [
-            # Cell B1: Average
+            
+            # Cell B15: Overall Average USD per Unit
             {
-                'cell': 'B1', 
-                'valid_formulas': [
-                    '=AVERAGE(CoffeeData!F:F)', 
-                    '=AVERAGE(simplified_coffee[rating])'
-                ],
-                'expected_values': 10.48,
+                'cell': 'B15', 
+                'expected_value': 20.12,
                 'points': {
-                    'formula': 2,
-                    'value': 2,
-                    'decimal_reduction': 1
+                    'value': 5,
                 }
             },
-            # Cell B2: Max Rating
+            # Cell E15: Overall Average Rating
             {
-                'cell': 'B2', 
-                'valid_formulas': [
-                    '=MAX(CoffeeData!G:G)', 
-                    '=MAX(simplified_coffee[rating])'
-                ],
-                'expected_value': 97,
+                'cell': 'E15', 
+                'expected_value': 93.08520928987156,
                 'points': {
-                    'formula': 2,
-                    'value': 2
+                    'value': 5,
                 }
             },
-            # Cell B3: Min Rating
-            {
-                'cell': 'B3', 
-                'valid_formulas': [
-                    '=MIN(CoffeeData!G:G)', 
-                    '=MIN(simplified_coffee[rating])'
-                ],
-                'expected_value': 84,
-                'points': {
-                    'formula': 1,
-                    'value': 2
-                }
-            },
-            # Cell B4: Count of Reviews
-            {
-                'cell': 'B4', 
-                'expected_value': 1246,
-                'points': {
-                    'value': 4
-                }
-            },
-            # Cell B5: Sum of 100g USD
-            {
-                'cell': 'B5', 
-                'valid_formulas': [
-                    '=SUM(CoffeeData!F:F)', 
-                    '=SUM(simplified_coffee[100g_USD])'
-                ],
-                'points': {
-                    'formula': 2,
-                    'value': 2
-                }
-            },
-            # Cell E1: Unique Roasters Count
-            {
-                'cell': 'E1', 
-                'valid_formulas': ['=COUNTA(UNIQUE(Roasters))'],
-                'expected_value': 296,
-                'points': {
-                    'formula': 2,
-                    'value': 2
-                }
-            },
-            # Cell E2: Max Review Length
-            {
-                'cell': 'E2', 
-                'expected_value': 509,
-                'points': {
-                    'value': 5
-                }
-            },
-            # Cell E3: Average Rating
-            {
-                'cell': 'E3', 
-                'valid_formulas': [
-                    '=AVERAGE(CoffeeData!G:G)', 
-                    '=AVERAGE(simplified_coffee[Rating])'
-                ],
-                'expected_value': 93.31,
-                'points': {
-                    'formula': 1,
-                    'value': 2
-                }
-            },
-            # TABLE GRADING: H4 (Top of the table)
-            {
-                'cell': 'H4', 
-                'valid_formulas': ['=CoffeeData!A2'],
-                'expected_value': "Ethiopia Shakiso Mormora",
-                'points': {
-                    'formula': 1,
-                    'value': 1
-                }
-            },
-            # Cell H13
-            {
-                'cell': 'H13', 
-                'valid_formulas': ['=CoffeeData!A11'],
-                'expected_value': "Ethiopia Yirgacheffe Washed G1",
-                'points': {
-                    'formula': 1,
-                    'value': 1
-                }
-            },
-            # Cell I4 (Top of the table)
+            # Cell I4: Most Expensive Country of Origin
             {
                 'cell': 'I4', 
-                'valid_formulas': ['=CoffeeData!F2*$I$1'],
-                'expected_value': 235.00,
+                'expected_value': "Australia",
                 'points': {
-                    'formula': 2,
-                    'value': 1
+                    'value': 5,
+                    'formula': 5
                 }
             },
-            # Cell I13 (Bottom of the table)
+            # Cell I5: Least Expensive Country of Origin
+            {
+                'cell': 'I5', 
+                'expected_value': "Guatemala",
+                'points': {
+                    'value': 5,
+                    'formula': 5
+                }
+            },
+            # Cell I7: Country with the Highest Rating
+            {
+                'cell': 'I7', 
+                'expected_value': "Australia",
+                'points': {
+                    'value': 5,
+                    'formula': 5
+                }
+            },
+            # Cell I8: Country with the Lowest Rating
+            {
+                'cell': 'I8', 
+                'expected_value': "China",
+                'points': {
+                    'value': 5,
+                    'formula': 5
+                }
+            },
+            # Cell I12: Average Length of Reviews
+            {
+                'cell': 'I12', 
+                'expected_value': 269.75607779578604,
+                'points': {
+                    'value': 5,
+                    'formula': 5
+                }
+            },
+            # Cell I13: Longest Review Length
             {
                 'cell': 'I13', 
-                'valid_formulas': ['=CoffeeData!F11*$I$1'],
-                'expected_value': 343.50,
+                'expected_value': 509,
                 'points': {
-                    'formula': 2,
-                    'value': 1
+                    'value': 5,
+                    'formula': 5
                 }
             },
-            # Cell J4 (Affordable Validation TOP)
+            # Cell I14: Shortest Review Length
             {
-                'cell': 'J4', 
-                'valid_formulas': ['=IF(Table2[[#This Row],[USD per \'\'x\'\' Units]] <= 250, "Yes", "No")'],
-                'expected_value': "Yes",
+                'cell': 'I14', 
+                'expected_value': 66,
                 'points': {
-                    'formula': 2,
-                    'value': 1
-                }
-            },
-            # Cell J9 (Affordable Validation MIDDLE)
-            {
-                'cell': 'J9', 
-                'valid_formulas': ['=IF(Table2[[#This Row],[USD per \'\'x\'\' Units]] <= 250, "Yes", "No")'],
-                'expected_value': "No",
-                'points': {
-                    'formula': 2,
-                    'value': 1
-                }
-            },
-            # Cell J13 (Affordable Validation BOTTOM)
-            {
-                'cell': 'J13', 
-                'valid_formulas': ['=IF(Table2[[#This Row],[USD per \'\'x\'\' Units]] <= 250, "Yes", "No")'],
-                'expected_value': "No",
-                'points': {
-                    'formula': 2,
-                    'value': 1
+                    'value': 5,
+                    'formula': 5
                 }
             },
             
-            
-            #--------BONUS QUESTIONS---------------------
-            # Cell C10: Ethiopian Light Roast
+            #--------BONUS QUESTION---------------------
+            # Cell I18: Country Skewing Results
             {
-                'cell': 'C10', 
-                'valid_formulas': [
-                    '=AVERAGEIFS(CoffeeData!G:G, CoffeeData!C:C, "Light", CoffeeData!E:E, "Ethiopia")',
-                    '=ROUND(AVERAGEIFS(CoffeeData!G:G, CoffeeData!C:C, "Light", CoffeeData!E:E, "Ethiopia"), 1)',
-                    '=ROUND(AVERAGE(IF((CoffeeData!C:C="Light")*(CoffeeData!E:E="Ethiopia"), CoffeeData!G:G)), 1)',
-                    '=ROUND(AVERAGE(FILTER(CoffeeData!G:G, (CoffeeData!C:C="Light")*(CoffeeData!E:E="Ethiopia"))), 1)',
-                    '=ROUND(SUMIFS(CoffeeData!G:G, CoffeeData!C:C, "Light", CoffeeData!E:E, "Ethiopia") / COUNTIFS(CoffeeData!C:C, "Light", CoffeeData!E:E, "Ethiopia"), 1)'
-                ],
-                'expected_value': 93.65,
+                'cell': 'I18', 
+                'expected_value': "Australia",
                 'points': {
-                    'formula': 2.5,
                     'value': 5
                 }
-            },
-            # Cell C11: Ethiopian Light Roast
-            {
-                'cell': 'C11', 
-                'expected_value': 92,
-                'points': {
-                    'value': 7.5
-                }
-            },
+            }
             
         ]
 
@@ -510,46 +509,28 @@ def grade_project_1(student_path):
                 # For text comparisons, convert both to strings and compare
                 return str(actual_value).strip() == str(expected_value).strip()
 
-        # Perform detailed checks for each calculation
+        # Perform checks for each calculation
         for calc in calc_checks:
             cell = calc['cell']
             try:
-                cell_obj = analysis_sheet[cell]
-                cell_value = wb_values['Analysis'][cell].value
+                cell_obj = analysis_sheet_values[cell]
+                cell_value = wb_values['CoffeeAnalysis'][cell].value  # Adjusted sheet name
 
-                # Formula check
-                if 'valid_formulas' in calc:
-                    formula_points = 0
-                    formula_feedback = []
-                    if cell_obj.data_type == 'f':
-                        formula = str(cell_obj.value).strip().replace('_xlfn.', '')
-                        
-                        print(f"Debugging cell {cell}:")
-                        print(f"Received formula: {formula}")
-                        print(f"Expected formulas: {calc['valid_formulas']}")
-                        
-                        for valid_formula in calc['valid_formulas']:
-                            if formula == valid_formula:
-                                points_to_add = calc.get('points', {}).get('formula', 0)
-                                score += points_to_add
-                                formula_points = points_to_add
-                                break
-                        
-                        if formula_points == 0:
-                            formula_feedback = [
-                                f"Cell {cell} Formula Check:",
-                                f"  - Received: {formula}",
-                                f"  - Expected one of: {', '.join(calc['valid_formulas'])}"
-                            ]
-                            feedback.extend(formula_feedback)
-                    else:
-                        feedback.append(f"Cell {cell}: No formula found (cell contains static value)")
+
+                #-------WORK IN PROGRESS----------------
+                # Formula check: Ensure any formula exists
+                #if 'points' in calc and 'formula' in calc['points']:
+                #    if cell_obj.data_type == 'f':  # Cell contains a formula
+                #        score += calc['points']['formula']
+                #    else:
+                #        feedback.append(f"Cell {cell}: No formula found (cell contains a static value)")
+
 
                 # Value check with type handling
                 if 'expected_value' in calc:
                     value_match = compare_values(cell_value, calc['expected_value'])
                     if value_match:
-                        score += calc.get('points', {}).get('value', 0)
+                        score += calc['points']['value']
                     else:
                         value_feedback = [
                             f"Cell {cell} Value Check:",
@@ -566,5 +547,153 @@ def grade_project_1(student_path):
 
     except Exception as e:
         print(f"Error grading Project 1: {e}")
+        traceback.print_exc()
+        return 0, total_points, [f"An error occurred during grading: {str(e)}"]
+      
+def grade_project_2(student_path):
+    try:
+        # First pass: Check formulas (data_only=False)
+        wb_formulas = openpyxl.load_workbook(student_path, data_only=False)
+        # Second pass: Check values (data_only=True)
+        wb_values = openpyxl.load_workbook(student_path, data_only=True)
+
+        # Initialize scoring variables
+        score = 0
+        total_points = 50
+        feedback = []
+
+        # Check if all required sheets are present
+        required_sheets = ["Report", "Participants", "Times", "Names & Emails"]
+        sheet_names = wb_formulas.sheetnames
+        if all(sheet in sheet_names for sheet in required_sheets):
+            score += 4
+        else:
+            feedback.append("Sheet structure incorrect: Required sheets not found or incorrectly named.")
+
+        # Sheet 1: "Report" - Cell Values Check
+        report_sheet = wb_values["Report"]
+        report_values = {
+            "B2": 917, "B3": 283, "B4": 332,
+            "D2": 574, "D3": 689, "D4": 308,
+            "F2": 801, "F3": 931, "F4": 407,
+            "H2": 11, "H3": 478, "H4": 70,
+            "B7": 522, "B8": 49
+        }
+        points_per_cell = 1
+        for cell, expected_value in report_values.items():
+            if report_sheet[cell].value == expected_value:
+                score += points_per_cell
+            else:
+                feedback.append(f"Incorrect value in Report sheet at {cell}. Expected {expected_value}, found {report_sheet[cell].value}.")
+
+        # Sheet 2: "Participants"
+        participants_sheet = wb_formulas["Participants"]
+        # Check for the presence of a table in Participants sheet
+        if len(participants_sheet.tables) > 0:
+            score += 3
+        else:
+            feedback.append("No table found in Participants sheet.")
+
+        # Check the number of rows in Participants sheet
+        num_rows = participants_sheet.max_row
+        if num_rows == 1001:
+            score += 5
+        elif num_rows == 523:
+            score += 5
+        else:
+            feedback.append(f"Incorrect number of rows in Participants sheet. Found {num_rows} rows.")
+
+        # Header Formatting Check
+        try:
+            header_font = participants_sheet["A1"].font
+            if header_font.bold and header_font.size == 13:  # Assuming Heading 2 style has size 13 and bold
+                score += 3
+            else:
+                feedback.append("Incorrect header formatting in Participants sheet. Expected 'Heading 2' style (bold, size 13).")
+        except AttributeError:
+            feedback.append("Error checking header formatting in Participants sheet.")
+
+        # Check if top row is frozen in Participants sheet
+        if participants_sheet.freeze_panes == "A2":
+            score += 3
+        else:
+            feedback.append("Top row is not frozen in Participants sheet.")
+
+        # Sheet 3: "Times"
+        times_sheet = wb_formulas["Times"]
+        # Check for the presence of a table in Times sheet
+        if len(times_sheet.tables) > 0:
+            score += 3
+        else:
+            feedback.append("No table found in Times sheet.")
+
+        # Check the number of rows in Times sheet
+        num_rows = times_sheet.max_row
+        if num_rows == 523:
+            score += 3
+        else:
+            feedback.append(f"Incorrect number of rows in Times sheet. Found {num_rows} rows.")
+
+        # Header Formatting Check
+        try:
+            header_font = times_sheet["A1"].font
+            if header_font.bold and header_font.size == 13:  # Assuming Heading 2 style has size 13 and bold
+                score += 3
+            else:
+                feedback.append("Incorrect header formatting in Times sheet. Expected 'Heading 2' style (bold, size 13).")
+        except AttributeError:
+            feedback.append("Error checking header formatting in Times sheet.")
+
+        # Check if top row is frozen in Times sheet
+        if times_sheet.freeze_panes == "A2":
+            score += 3
+        else:
+            feedback.append("Top row is not frozen in Times sheet.")
+
+        # Sheet 4: "Names & Emails"
+        names_emails_sheet = wb_values["Names & Emails"]
+        match_names = True
+        match_emails = True
+
+        # List of cells that should be empty in the "Names & Emails" sheet, column B
+        allowed_empty_cells = [
+            3, 17, 18, 33, 61, 78, 79, 80, 85, 113, 127, 128, 138, 148, 153, 159, 161,
+            183, 187, 190, 191, 205, 246, 250, 252, 279, 284, 289, 302, 309, 312, 329,
+            347, 361, 365, 369, 387, 394, 398, 422, 442, 458, 467, 489, 490, 493, 497,
+            499, 507
+        ]
+
+        for row in range(2, 524):
+            participant_name = wb_values["Participants"][f"B{row}"].value
+            names_emails_name = names_emails_sheet[f"A{row}"].value
+
+            if participant_name is not None and names_emails_name != participant_name.upper():
+                match_names = False
+                feedback.append(f"Incorrect name format at Names & Emails sheet cell A{row}. Expected uppercase.")
+                break
+
+            participant_email = wb_values["Participants"][f"E{row}"].value
+            names_emails_email = names_emails_sheet[f"B{row}"].value
+
+            if row in allowed_empty_cells:
+                if names_emails_email is not None:
+                    match_emails = False
+                    feedback.append(f"Cell B{row} in Names & Emails sheet should be empty but contains data.")
+                    break
+            else:
+                if participant_email is not None and names_emails_email != participant_email.lower():
+                    match_emails = False
+                    feedback.append(f"Incorrect email format at Names & Emails sheet cell B{row}. Expected lowercase.")
+                    break
+
+        if match_names:
+            score += 3
+        if match_emails:
+            score += 3
+
+        return score, total_points, feedback
+
+    except Exception as e:
+        print(f"Error grading Project 2: {e}")
         traceback.print_exc()
         return 0, total_points, [f"An error occurred during grading: {str(e)}"]
