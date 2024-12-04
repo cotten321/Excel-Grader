@@ -85,7 +85,7 @@ def grade_challenge_2(student_path):
         # 1. Searching for data (4 points)
         # Check if the cell with the employee making $75,000 is highlighted in yellow
         target_cell = "B144"  # The cell containing the employee's name making $75,000
-        if student_ws[target_cell].fill.start_color.rgb == "FFFFFF00":  # Yellow color in Excel
+        if student_ws[target_cell].fill.start_color.rgb == "FFFFFF00":  # Yellow
             score += 2
         else:
             feedback.append("Cell B144 (name of employee with $75,000 salary) is not highlighted in yellow.")
@@ -180,16 +180,6 @@ def grade_challenge_3_1(student_path):
             round(float(student_ws.page_margins.top), 2) == 0.75 and 
             round(float(student_ws.page_margins.bottom), 2) == 0.75):
             score += 2
-
-        # Scale to Fit to 1 page is ungradeable at this time
-
-        # Check for narrow margins
-        if (student_ws.page_margins.left == 0.25 and 
-            student_ws.page_margins.right == 0.25 and
-            student_ws.page_margins.top == 0.75 and 
-            student_ws.page_margins.bottom == 0.75):
-            score += 1.5
-
         else:
             feedback.append("Margins are not set to Narrow.")
 

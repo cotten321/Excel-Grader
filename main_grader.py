@@ -5,7 +5,7 @@ from tkinter import filedialog, messagebox
 from openpyxl import Workbook
 from openpyxl.styles import NamedStyle, PatternFill
 import threading
-#import subprocess
+import subprocess
 
 # Import the grading algorithms from grading_algorithms.py
 from grading_algorithms import *
@@ -14,7 +14,7 @@ from grading_algorithms import *
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
-#
+# Grading functions that correlate to algorithms in the 'grading_algorithms.py' file
 def get_grading_function(challenge_number):
     grading_functions = {
         "Project 1: Cafe Bloom": grade_project_1,
@@ -25,6 +25,7 @@ def get_grading_function(challenge_number):
     }
     return grading_functions.get(challenge_number), grading_functions
 
+# Link the users input to a called function
 def process_submissions(folder_path, challenge_number, output_path, progress_callback, completion_callback):
     grading_function, _ = get_grading_function(challenge_number)
     
@@ -33,10 +34,18 @@ def process_submissions(folder_path, challenge_number, output_path, progress_cal
         completion_callback(False, "No grading function available.")
         return
 
+    #Start empty list to place grades for each student in
     grades = []
     student_folders = [f for f in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, f))]
+    # Indicates the number of folders to iterate through
     total_students = len(student_folders)
 
+
+    '''
+    Append the grading result for each student to the grades list. 
+    If the grading function succeeds, it records the student's folder name, score, total points, percentage, and feedback.
+    If an error occurs during grading (e.g., file format issue), the grade is set to 0, and an error message is added to the feedback.
+    '''
     for index, student_folder in enumerate(student_folders, 1):
         student_folder_path = os.path.join(folder_path, student_folder)
         
@@ -48,7 +57,7 @@ def process_submissions(folder_path, challenge_number, output_path, progress_cal
                 try:
                     score, total_points, feedback = grading_function(student_file_path)
                     percentage = round((score / total_points) * 100, 2) if total_points > 0 else 0
-
+                    
                     grades.append({
                         "Student": student_folder,
                         "Score": score,
@@ -61,13 +70,13 @@ def process_submissions(folder_path, challenge_number, output_path, progress_cal
                     grades.append({
                         "Student": student_folder,
                         "Score": 0,
-                        "Total Points": 100,
+                        "Total Points": total_points,
                         "Percentage": 0,
                         "": "",
-                        "Feedback": f"Error: {str(e)}"
+                        "Feedback": f"Error: {str(e)}" # Appends the issue that caused an error with that student
                     })
         
-        # Update progress
+        # Update progress (used for progress bar)
         progress = int((index / total_students) * 100)
         progress_callback(progress)
 
@@ -82,16 +91,16 @@ def process_submissions(folder_path, challenge_number, output_path, progress_cal
     
     # Create named styles 
     outstanding_style = NamedStyle(name='Outstanding')
-    outstanding_style.fill = PatternFill(start_color='C099E8', end_color='C099E8', fill_type='solid')
+    outstanding_style.fill = PatternFill(start_color='CDAEED', end_color='CDAEED', fill_type='solid')
     
     good_style = NamedStyle(name='Good')
-    good_style.fill = PatternFill(start_color='41DF45', end_color='41DF45', fill_type='solid')
+    good_style.fill = PatternFill(start_color='82EA85', end_color='82EA85', fill_type='solid')
     
     neutral_style = NamedStyle(name='Neutral')
-    neutral_style.fill = PatternFill(start_color='FFFF99', end_color='FFFF99', fill_type='solid')
+    neutral_style.fill = PatternFill(start_color='FFFFB3', end_color='FFFFB3', fill_type='solid')
     
     bad_style = NamedStyle(name='Bad')
-    bad_style.fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+    bad_style.fill = PatternFill(start_color='FF4D4D', end_color='FF4D4D', fill_type='solid')
     
     # Add styles to workbook
     if 'Outstanding' not in wb.named_styles:
@@ -103,15 +112,16 @@ def process_submissions(folder_path, challenge_number, output_path, progress_cal
     if 'Bad' not in wb.named_styles:
         wb.add_named_style(bad_style)
     
-    # Append the header
+    # Append the header to the grade report, with an empty column before feedback
     ws.append(["Student", "Score", "Total Points", "Percentage", "", "Feedback"])
     
-    # Add student data and apply cell styles
+    # Add student data
     for index, row in df.iterrows():
         ws.append(row.tolist())
         
-        # Apply styles based on the score to the score column
+        # Apply styles based on the score to the score column (B)
         cell = ws[f"B{index + 2}"]
+        
         # User score over 100 (achieved bonus points)
         if row["Percentage"] > 100:
             cell.style = "Outstanding"
@@ -128,9 +138,21 @@ def process_submissions(folder_path, challenge_number, output_path, progress_cal
     # Save the report
     wb.save(output_file)
          
-    # Signal completion
+    # Signal completion to user with the report path
     completion_callback(True, f"Grading complete! Report saved to: {output_file}")
 
+
+'''
+Main Class that holds the custom Tkinter window.
+
+Users are able to:
+1. Select a folder containing student submissions,
+2. Choose a grading challenge (labled as projects or skills)
+3. Select an output forlder for the grading results
+4. Start the grading process, calling the above functions1
+5. View the progress bar, indicating completion percentage
+6. Open the grading report right from the application
+'''
 class ExcelGraderApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -193,6 +215,7 @@ class ExcelGraderApp(ctk.CTk):
             "Skill: Format worksheets and workbooks"
         ]
 
+        # Creates dropdown list for users to select challenge
         self.challenge_combobox = ctk.CTkComboBox(
             self.main_frame, 
             values=self.challenges,
@@ -212,7 +235,7 @@ class ExcelGraderApp(ctk.CTk):
             self.select_output_folder
         )
 
-        # Start Grading Button with modern styling
+        # Start Grading Button
         self.start_button = ctk.CTkButton(
             self.main_frame, 
             text="Start Grading", 
@@ -235,7 +258,7 @@ class ExcelGraderApp(ctk.CTk):
         )
         self.status_label.pack(pady=(10, 20))
 
-        # State variables
+        # State variables initial state (keeps track of user selcections)
         self.submissions_folder = None
         self.output_folder = None
 
@@ -287,7 +310,7 @@ class ExcelGraderApp(ctk.CTk):
             self.submissions_entry = entry
         else:
             self.output_entry = entry
-
+ 
     def browse_folder(self, entry_widget, selection_method):
         selection_method()
         entry_widget.configure(state="normal")
@@ -295,6 +318,7 @@ class ExcelGraderApp(ctk.CTk):
         entry_widget.insert(0, self.submissions_folder if "submissions" in entry_widget.cget("placeholder_text").lower() else self.output_folder)
         entry_widget.configure(state="disabled")
 
+    #Updates the widget to show the users selection
     def select_submissions_folder(self):
         folder = filedialog.askdirectory()
         if folder:
@@ -304,6 +328,7 @@ class ExcelGraderApp(ctk.CTk):
             self.submissions_entry.insert(0, folder)
             self.submissions_entry.configure(state="readonly")
 
+    # Updates the widget to show the users selection
     def select_output_folder(self):
         folder = filedialog.askdirectory()
         if folder:
@@ -313,19 +338,23 @@ class ExcelGraderApp(ctk.CTk):
             self.output_entry.insert(0, folder)
             self.output_entry.configure(state="readonly")
 
+    # If all inputs are present, start the grading process
     def start_grading(self):
         if not self.submissions_folder or not self.output_folder or not self.challenge_combobox.get():
             messagebox.showwarning("Input Error", "Please select all required inputs.")
             return
 
-        # Disable start button during grading
+        # Disable start button during grading (Needed to prevent users from double calling)
         self.start_button.configure(state="disabled")
+    
         self.progress_bar.set(0)
         self.status_label.configure(text="Grading in progress...")
 
+        # Updates the top progress bar (just aesthetic)
         def progress_update(value):
             self.progress_bar.set(value / 100)
 
+        # Resets the GUI back to the "standard" state
         def grading_complete(success, message):
             self.start_button.configure(state="normal")
             self.progress_bar.set(1 if success else 0)
@@ -335,10 +364,10 @@ class ExcelGraderApp(ctk.CTk):
                 # Extract the full path of the generated report from the message
                 report_path = message.split(": ")[-1]
 
-                # Show custom completion dialog
+                # Show custom completion dialog with the path to the report
                 self.show_completion_dialog(report_path)
 
-        # Start grading in a separate thread
+        # Start grading in a separate thread (This prevents the GUI from freezing while grading)
         threading.Thread(
             target=process_submissions, 
             args=(
@@ -351,15 +380,15 @@ class ExcelGraderApp(ctk.CTk):
             daemon=True
         ).start()
         
-    # Create a custom dialog for grading completion with Open Report and Close buttons   
+    # Create a dialog for grading completion with Open report and Close buttons   
     def show_completion_dialog(self, report_path):
         
-        # Create a top-level window
+        # Creates a top-level window
         dialog = ctk.CTkToplevel(self)
         dialog.title("Grading Complete")
         dialog.geometry("350x200")
         dialog.resizable(False, False)
-        dialog.grab_set()  # Make the dialog modal
+        dialog.grab_set() # This makes the dialogue box modal (prevents the user from taking other action on main window)
 
         # Success message label
         message_label = ctk.CTkLabel(
@@ -383,7 +412,7 @@ class ExcelGraderApp(ctk.CTk):
             height=40,
             corner_radius=25,
             fg_color="#007AFF",  # Blue
-            hover_color="#0056b3"
+            hover_color="#0056b3"   #Slightly darker blue
         )
         open_button.pack(side="left", padx=10)
 
@@ -396,16 +425,22 @@ class ExcelGraderApp(ctk.CTk):
             height=40,
             corner_radius=25,
             fg_color="#F2F2F7",  # Light gray
-            text_color="#007AFF",
-            hover_color="#E0E0E5"
+            text_color="#007AFF",   # Blue
+            hover_color="#E0E0E5"   # Gray
         )
-        close_button.pack(side="right", padx=10)    
-    # Open the Excel report using the default system application.    
+        close_button.pack(side="right", padx=10)
+        
+    # Open the Excel report 
     def open_excel_report(self, file_path, parent_dialog=None):
-
         try:
-            if os.name == 'nt':  # Windows File Explorer
+            if os.name == 'nt':  # Windows
                 os.startfile(file_path)
+            # If user is using MacOS or Linux, (Remove if packaging as .exe)
+            elif os.name == 'posix':  # macOS and Linux
+                if subprocess.sys.platform == 'darwin':  # macOS
+                    subprocess.call(('open', file_path))
+                else:  # Linux
+                    subprocess.call(('xdg-open', file_path))
                 
             # Close the parent dialog if provided
             if parent_dialog:
