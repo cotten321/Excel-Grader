@@ -214,13 +214,13 @@ def grade_challenge_3_1(student_path):
 
         # Check for Date in the center part of the header
         if student_ws.oddHeader.center and hasattr(student_ws.oddHeader.center, 'text') and "&D" in student_ws.oddHeader.center.text:
-            score += 1
+            score += 2
         else:
             feedback.append("Header does not contain date in center.")
 
         # Check if the file name is in the right side of the header
         if student_ws.oddHeader.right and hasattr(student_ws.oddHeader.right, 'text') and "&F" in student_ws.oddHeader.right.text:
-            score += 1
+            score += 1.5
         else:
             feedback.append("Header does not contain file name on the right.")
 
